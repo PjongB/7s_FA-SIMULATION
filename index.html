@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-return-interlock"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-simple-return"></head>
 <body>
 <header class="topbar"><a class="brand" href="./" aria-label="Robot3 홈"><span class="brand-icon">R<span>3</span></span><strong>ROBOT3<span>FACTORY LAB</span></strong></a><nav aria-label="페이지"><button class="nav active" data-tab="simulation">공정 시뮬레이션</button><button class="nav" data-tab="gallery">현장 사진 <span>09</span></button></nav><span class="demo-badge"><i></i> 시나리오 데모</span></header>
 <main>
@@ -15,7 +15,7 @@
      production bottom-right, waiting bay off the central junction. -->
 <path d="M280 295 V640 H50 V850 H280 V975 H400 V850 H435 M400 295 V640 H435" fill="none" stroke="#c8d0d1" stroke-width="12"/>
 <path d="M280 295 V640 H50 V850 H280 V975 H400 V850 H435 M400 295 V640 H435" fill="none" stroke="#fff" stroke-width="8"/>
-<path class="road-dash" d="M340 300 V920 M110 700 H340 M110 795 H340 M220 700 V795 M220 750 H400"/>
+<path class="road-dash" d="M340 300 V920 M110 700 H340 M110 795 H340 M340 750 H400"/>
 <text x="340" y="485" text-anchor="middle" class="route-label">운반 통로</text>
 <text x="340" y="510" text-anchor="middle" class="zone-sub">자재창고 ↕ 교차 통로</text>
 <g class="station" tabindex="0" role="button" aria-label="자재창고 사진 보기" data-photo="warehouse">
@@ -84,5 +84,5 @@
 <footer><span><strong>ROBOT3</strong> · 1차 통합 시연</span><p>사진 기반 공정 시나리오 · 이동 경로와 소요 시간은 설명용이며 실제 로봇을 제어하지 않습니다.</p><a href="https://rorobot.atlassian.net/wiki/spaces/robot3/pages/edit-v2/19759106" target="_blank" rel="noopener">공정 목표 문서 ↗</a></footer>
 </main>
 <dialog id="photo-dialog"><button id="close-dialog" aria-label="사진 닫기">×</button><img id="dialog-image" alt=""><div><h2 id="dialog-title"></h2><p id="dialog-description"></p></div></dialog>
-<script src="engine.js?v=20260926-return-interlock"></script><script src="app.js?v=20260926-return-interlock"></script>
+<script src="engine.js?v=20260926-simple-return"></script><script src="app.js?v=20260926-simple-return"></script>
 </body></html>

@@ -81,10 +81,14 @@
       const p=point(from,robot);
       return [p,[340,p[1]],point(to,robot)];
     }
+    if(from==='waiting'&&to==='home'){
+      const p=point(to,robot);
+      return [point(from,robot),[340,p[1]],p];
+    }
     // Each bay joins the central vertical aisle; never cut across a workboard.
     const branch=place=>{
       const p=point(place,robot);
-      if(place==='home')return [p,[220,p[1]],[220,750],[340,750]];
+      if(place==='home')return [p,[340,p[1]],[340,750]];
       return [p,[340,750]];
     };
     const points=[...branch(from),...branch(to).reverse()];

@@ -139,13 +139,15 @@ for(const n of [1,2,3,20]){
   }
   if(task.from==='assembly'&&task.to==='home'){
    assert.deepEqual(phases[0].to,[340,750]);
-   assert.equal(phases[1].type,'turn');assert.equal(Math.abs(phases[1].delta),180);
+   assert.equal(phases[1].type,'turn');
+   assert.deepEqual(phases.filter(p=>p.type==='turn').map(p=>p.delta),task.actor===0?[-90,-90]:[90,90]);
+   assert(phases.filter(p=>p.type==='turn').every(p=>p.position[0]===340),'Turn only on central aisle');
    assert(phases.slice(2).filter(p=>p.type==='drive').every(p=>!p.reversing));
    assert.equal(phases.at(-1).type,'drive');assert.equal(phases.at(-1).heading,270);
   }
  }
 }
-console.log('PASS: wall-facing homes, reverse exits, right turns to warehouse/assembly and junction half-turn before forward return.');
+console.log('PASS: wall-facing homes, reverse exits, right turns to warehouse/assembly and two left/right turns on central aisle before forward return.');
 
 for(let n=2;n<=20;n++){
  const plan=makePlan(n),last=plan.jobs.at(-1),other=1-last.robot;
@@ -156,3 +158,10 @@ for(let n=2;n<=20;n++){
  assert.equal(snapshot(plan,last.arrived).transport,0);
 }
 console.log('PASS: final delivery docking completes before the waiting robot returns home, orders 2–20.');
+
+for(const robot of [0,1]){
+ const home=POINTS['home'+(robot+1)];
+ assert.deepEqual(path('assembly','home',robot),[POINTS.assembly,[340,750],[340,home[1]],home]);
+ assert.deepEqual(path('waiting','home',robot),[POINTS.waiting,[340,home[1]],home]);
+}
+console.log('PASS: no extra home-side waypoints or detours on either return route.');
