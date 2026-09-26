@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,750] };
-  const DOCK_HEADINGS = {home:270,waiting:0,warehouse:0,assembly:90};
+  const DOCK_HEADINGS = {home:90,waiting:0,warehouse:0,assembly:90};
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
   function makePlan(quantity) {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new RangeError('주문 수량은 1~20 사이의 정수로 입력하세요.');
@@ -11,7 +11,7 @@
     const event=(time,kind,data={})=>events.push({time,kind,...data,serial:serial++});
     function task(actor,type,start,end,data={}) { const x={id:tasks.length,actor,type,start,end,...data}; tasks.push(x); return x; }
     function move(robot,from,to,start,duration,job=null) {
-      const motion=makeMotion(path(from,to,robot),from==='home'?90:DOCK_HEADINGS[from],duration,to==='waiting');
+      const motion=makeMotion(path(from,to,robot),DOCK_HEADINGS[from],duration,to==='waiting',DOCK_HEADINGS[to]);
       const end=start+motion.at(-1).end;
       task(robot,'move',start,end,{from,to,job,motion});
       event(start,'move_start',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]}로 이동`,photo:to==='warehouse'?'warehouse':to==='home'?'home':'route'});
@@ -96,7 +96,7 @@
     return {position:points.at(-1),heading:0};
   }
   function position(points,progress) {return pose(points,progress).position;}
-  function makeMotion(points,initialHeading,driveDuration,reverseLast=false){
+  function makeMotion(points,initialHeading,driveDuration,reverseLast=false,finalHeading=null){
     const lengths=points.slice(1).map((p,i)=>Math.hypot(p[0]-points[i][0],p[1]-points[i][1]));
     const total=lengths.reduce((a,b)=>a+b,0),motion=[];
     let cursor=0,heading=initialHeading;
@@ -113,6 +113,10 @@
       const end=cursor+driveDuration*lengths[i]/total;
       motion.push({type:'drive',start:cursor,end,from:a,to:b,heading:next,reversing});
       cursor=end;heading=next;
+    }
+    if(finalHeading!==null){
+      const delta=(finalHeading-heading+540)%360-180;
+      if(Math.abs(delta)>1e-8)motion.push({type:'turn',start:cursor,end:cursor+Math.abs(delta)/90,position:points.at(-1),heading,delta,targetHeading:finalHeading});
     }
     return motion;
   }

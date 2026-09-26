@@ -120,3 +120,17 @@ for(const n of [2,3,20]){
  }
 }
 console.log('PASS: reverse parking into waiting bay, exit-facing stop and forward departure.');
+
+for(const n of [1,2,3,20]){
+ const plan=makePlan(n);
+ snapshot(plan,0).robots.forEach(r=>assert.equal(r.heading,90));
+ snapshot(plan,plan.duration).robots.forEach(r=>assert.equal(r.heading,90));
+ for(const task of plan.tasks.filter(t=>t.type==='move'&&t.to==='home')){
+  const last=task.motion.at(-1);
+  assert.equal(last.type,'turn');assert.equal(last.targetHeading,90);
+  assert.equal(Math.abs(last.delta),180);
+  assert.deepEqual(last.position,POINTS['home'+(task.actor+1)]);
+  assert(task.end<=plan.duration,'Order completion waits for final heading alignment');
+ }
+}
+console.log('PASS: initial and returned robots face right; return includes a stationary half-turn.');

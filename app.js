@@ -10,7 +10,7 @@ const photos={
  process:{title:'제작공정 · 리니어 모터',detail:'조립 전에는 A지그 위치로, 조립 후에는 초기위치로 이동합니다.'},
  pallet:{title:'로봇팔 3 · 완제품 적재',detail:'완제품을 파렛트로 옮긴 뒤 성공을 확인하면 Host의 완제품 잔여 카운트가 줄어듭니다.'},
  waiting:{title:'버거 대기장소',detail:'교차 통로에서 출구를 바라보도록 정렬한 뒤 후진 주차합니다. 대기 후에는 전진으로 출차합니다.'},
- home:{title:'버거 초기위치',detail:'버거 1과 2의 시작·복귀 위치입니다. 중간 대기장소와 별도로 관리합니다.'}
+ home:{title:'버거 초기위치',detail:'버거 1과 2는 초기위치에서 모두 오른쪽을 바라봅니다. 복귀 후에도 제자리 회전으로 오른쪽을 향한 뒤 대기합니다.'}
 };
 let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
 const idlePlan=RobotSimulation.makePlan(2);
