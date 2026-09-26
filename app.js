@@ -14,6 +14,24 @@ const photos={
 };
 let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
 const idlePlan=RobotSimulation.makePlan(2);
+// Dock cues are schematic placeholders; no physical marker IDs are assigned here.
+const svgNS='http://www.w3.org/2000/svg';
+Object.entries(RobotSimulation.POINTS).forEach(([place,point])=>{
+ const kind=place.startsWith('home')?'home':place;
+ const cue=document.createElementNS(svgNS,'g');
+ cue.setAttribute('class','dock-cue');
+ cue.setAttribute('transform',`translate(${point.join(' ')}) rotate(${RobotSimulation.DOCK_HEADINGS[kind]})`);
+ const title=document.createElementNS(svgNS,'title');
+ title.textContent=`${place}: ArUco 위치 표식과 적외선 센서용 검은 정지선 (개념 표시)`;
+ cue.append(title);
+ const line=document.createElementNS(svgNS,'path');
+ line.setAttribute('d','M-29 -21 H29');line.setAttribute('stroke','#111');line.setAttribute('stroke-width','6');
+ cue.append(line);
+ const marker=document.createElementNS(svgNS,'g');marker.setAttribute('transform',`translate(0 -55) rotate(${-RobotSimulation.DOCK_HEADINGS[kind]})`);
+ marker.innerHTML='<rect x="-14" y="-14" width="28" height="28" fill="white" stroke="#111" stroke-width="3"/><text y="5" text-anchor="middle" font-size="13" font-weight="800" fill="#111">AR</text>';
+ cue.append(marker);$('dock-cues').append(cue);
+});
+
 function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;}
 function validateQuantity(){const n=Number($('quantity').value);if(!Number.isInteger(n)||n<1||n>20)throw Error('주문 수량을 1~20 사이의 정수로 입력해 주세요.');return n;}
 function setPhoto(key){if(currentPhoto!==key||!$('scene-image').getAttribute('src')){$('scene-image').src=photoPath(key);currentPhoto=key;}$('scene-image').alt=photos[key].title;}
@@ -51,7 +69,7 @@ function getScene(s){
  return {key:f.to==='home'?'home':f.to==='waiting'?'waiting':f.to==='warehouse'?'warehouse':'route',kicker:`BURGER ${f.actor+1} · MOVING`,title:`버거 ${f.actor+1} · ${names[f.to]}`,detail:f.to==='assembly'?'Host가 운송 시작을 확인해 운송 잔여를 1 감소시켰습니다. 조립 위치로 이동 중입니다.':f.to==='home'?'추가 운송 배정이 없어 초기위치로 복귀합니다. 진행 중인 제품의 조립·적재는 계속됩니다.':f.to==='waiting'?'다른 버거와 제작공정을 교대하기 위해 대기장소로 이동합니다.':'자재창고에 도착하면 로봇팔 1이 A제품 부품 3개를 적재합니다.'};
 }
 function render(){
- const s=plan?RobotSimulation.snapshot(plan,time):{...RobotSimulation.snapshot(idlePlan,0),events:[],active:[],robots:[0,1].map(id=>({id,position:RobotSimulation.POINTS['home'+(id+1)],parts:0,status:'초기위치 대기'})),linear:0,arms:['대기','대기','대기'],done:false};
+ const s=plan?RobotSimulation.snapshot(plan,time):{...RobotSimulation.snapshot(idlePlan,0),events:[],active:[],robots:[0,1].map(id=>({id,position:RobotSimulation.POINTS['home'+(id+1)],parts:0,heading:90,status:'초기위치 대기'})),linear:0,arms:['대기','대기','대기'],done:false};
  $('total').textContent=plan?plan.quantity:'—';$('transport').textContent=plan?s.transport:'—';$('remaining').textContent=plan?s.remaining:'—';$('completed').textContent=plan?s.completed:0;
  const percent=plan?Math.round(s.completed/plan.quantity*100):0;$('completion-percent').textContent=percent+'%';$('completion-bar').style.width=percent+'%';$('pallet-count').textContent=(plan?s.completed:0)+'개 적재';
  $('run-status').textContent=!plan?'주문 대기':s.done?'주문 완료':playing?'시뮬레이션 진행 중':'일시정지';
@@ -59,7 +77,7 @@ function render(){
  document.querySelector('.order-status').className='order-status'+(playing?' running':s.done?' complete':'');
  ['quantity','plus','minus','product'].forEach(id=>$(id).disabled=!!plan&&!s.done);$('start').disabled=!!plan&&!s.done;$('start').innerHTML=s.done?'<span>↻</span> 새 주문 · 시작':'<span>▶</span> 주문 · 시작';
  $('play').textContent=playing?'Ⅱ':'▶';$('play').setAttribute('aria-label',playing?'일시정지':'재생');$('elapsed').textContent=formatTime(time);$('duration').textContent=formatTime(plan?.duration||0);$('timeline').max=plan?.duration||100;$('timeline').value=time;$('timeline').disabled=!plan;$('previous').disabled=!plan||time===0;$('next').disabled=!!plan&&s.done;$('export').disabled=!plan;
- s.robots.forEach((r,i)=>{const g=$('robot'+(i+1));g.setAttribute('transform',`translate(${r.position.join(' ')})`);g.querySelector('.cargo').innerHTML=Array.from({length:r.parts},(_,n)=>`<rect x="${n*9}" width="7" height="6" rx="1" fill="${i?'#d99032':'#3979c6'}"/>`).join('');const d=$('device-b'+(i+1));d.querySelector('.device-status').textContent=r.status;d.querySelector('.part-dots').innerHTML=Array.from({length:3},(_,n)=>`<i class="${n<r.parts?'filled':''}"></i>`).join('');d.classList.toggle('working',s.active.some(t=>t.actor===i&&t.type==='move'));});
+ s.robots.forEach((r,i)=>{const g=$('robot'+(i+1));g.setAttribute('transform',`translate(${r.position.join(' ')})`);g.querySelector('.robot-body').setAttribute('transform',`rotate(${r.heading})`);g.querySelector('.cargo').innerHTML=Array.from({length:r.parts},(_,n)=>`<rect x="${n*9}" width="7" height="6" rx="1" fill="${i?'#d99032':'#3979c6'}"/>`).join('');const d=$('device-b'+(i+1));d.querySelector('.device-status').textContent=r.status;d.querySelector('.part-dots').innerHTML=Array.from({length:3},(_,n)=>`<i class="${n<r.parts?'filled':''}"></i>`).join('');d.classList.toggle('working',s.active.some(t=>t.actor===i&&t.type==='move'));});
  $('jig').setAttribute('transform',`translate(${600-s.linear*95} 812)`);
  s.arms.forEach((v,i)=>{const d=$('device-a'+(i+1));d.querySelector('.device-status').textContent=v;d.classList.toggle('working',v!=='대기');const g=$('arm'+(i+1)+'-map');g.classList.toggle('active-arm',v!=='대기');g.querySelector('use').setAttribute('transform',v!=='대기'?`rotate(${Math.sin(time*2.6)*12})`:'rotate(0)');});
  if(plan){const scene=getScene(s);if(following)setPhoto(scene.key);$('scene-kicker').textContent=following?scene.kicker:'ON-SITE REFERENCE';$('scene-title').textContent=following?scene.title:photos[currentPhoto].title;$('scene-detail').textContent=following?scene.detail:photos[currentPhoto].detail;}

@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,750] };
+  const DOCK_HEADINGS = {home:270,waiting:180,warehouse:0,assembly:90};
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
   function makePlan(quantity) {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new RangeError('주문 수량은 1~20 사이의 정수로 입력하세요.');
@@ -13,7 +14,7 @@
       const end=start+duration;
       task(robot,'move',start,end,{from,to,job});
       event(start,'move_start',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]}로 이동`,photo:to==='warehouse'?'warehouse':to==='home'?'home':'route'});
-      event(end,'arrive',{robot,to,job,text:`버거 ${robot+1} · ${NAME[to]} 도착`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
+      event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} 도착`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
       return end;
     }
     event(0,'order',{quantity,text:`Host 주문 접수 · A제품 ${quantity}개 / 두 카운트 ${quantity}로 설정`,photo:'route'});
@@ -75,28 +76,30 @@
     const points=[...branch(from),...branch(to).reverse()];
     return points.filter((p,i)=>!i||p[0]!==points[i-1][0]||p[1]!==points[i-1][1]);
   }
-  function position(points,progress) {
+  function pose(points,progress) {
     const lengths=points.slice(1).map((p,i)=>Math.hypot(p[0]-points[i][0],p[1]-points[i][1]));
     let distance=lengths.reduce((a,b)=>a+b,0)*Math.max(0,Math.min(1,progress));
     for(let i=0;i<lengths.length;i++) {
       if(distance<=lengths[i]||i===lengths.length-1) {
         const f=lengths[i]?distance/lengths[i]:0;
-        return [points[i][0]+(points[i+1][0]-points[i][0])*f,points[i][1]+(points[i+1][1]-points[i][1])*f];
+        const dx=points[i+1][0]-points[i][0],dy=points[i+1][1]-points[i][1];
+        return {position:[points[i][0]+dx*f,points[i][1]+dy*f],heading:(Math.atan2(dy,dx)*180/Math.PI+450)%360};
       }
       distance-=lengths[i];
     }
-    return points.at(-1);
+    return {position:points.at(-1),heading:0};
   }
+  function position(points,progress) {return pose(points,progress).position;}
   function snapshot(plan,time) {
     time=Math.max(0,Math.min(plan.duration,time));
-    const robots=[0,1].map(i=>({id:i,place:'home',status:'초기위치 대기',parts:0,job:null,position:point('home',i)}));
+    const robots=[0,1].map(i=>({id:i,place:'home',status:'초기위치 대기',parts:0,job:null,heading:90,position:point('home',i)}));
     const state={time,quantity:plan.quantity,transport:plan.quantity,remaining:plan.quantity,completed:0,robots,linear:0,arms:['대기','대기','대기'],events:[],done:false};
     for(const e of plan.events) {
       if(e.time>time+1e-7)break;
       state.events.push(e);const r=robots[e.robot];
       switch(e.kind) {
         case 'move_start': r.place=e.to;r.status=NAME[e.to]+' 이동';r.job=e.job;break;
-        case 'arrive':r.status=e.to==='home'?'초기위치 복귀 완료':NAME[e.to]+' 대기';r.position=point(e.to,e.robot);break;
+        case 'arrive':r.status=e.to==='home'?'초기위치 복귀 완료':NAME[e.to]+' 대기';r.position=point(e.to,e.robot);r.heading=DOCK_HEADINGS[e.to];break;
         case 'load_start':r.status='부품 적재 중';state.arms[0]='부품 적재 중';break;
         case 'part':r.parts=e.part;if(e.part===3){r.status='부품 적재 완료 · 진입 대기';state.arms[0]='대기';}break;
         case 'dispatch':state.transport--;break;
@@ -112,13 +115,13 @@
     state.active=plan.tasks.filter(x=>x.start<=time&&time<x.end);
     for(const t of state.active) {
       const f=(time-t.start)/(t.end-t.start);
-      if(t.type==='move')robots[t.actor].position=position(path(t.from,t.to,t.actor),f);
+      if(t.type==='move')Object.assign(robots[t.actor],pose(path(t.from,t.to,t.actor),f));
       if(t.type==='prepare')state.linear=f;
       if(t.type==='reset')state.linear=1-f;
     }
     state.focus=[...state.active].sort((a,b)=>({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[b.type]||0)-({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[a.type]||0))[0];
     return state;
   }
-  const api={makePlan,snapshot,path,position,POINTS};
+  const api={makePlan,snapshot,path,position,pose,POINTS,DOCK_HEADINGS};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.RobotSimulation=api;
 })(typeof window!=='undefined'?window:globalThis);

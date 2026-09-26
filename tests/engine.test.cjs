@@ -64,3 +64,27 @@ for(const robot of [0,1]){
  assert.deepEqual(path('assembly','warehouse',robot),[...route].reverse());
 }
 console.log('PASS: staging trigger for orders 1–20, exact arrival boundary and straight assembly docking.');
+// Body heading follows the actual velocity on every straight route segment.
+const {pose,DOCK_HEADINGS}=require('../engine.js');
+for(const n of [1,2,3,20]){
+ const plan=makePlan(n);
+ for(const task of plan.tasks.filter(t=>t.type==='move')){
+  const route=path(task.from,task.to,task.actor);
+  const lengths=route.slice(1).map((p,i)=>Math.hypot(p[0]-route[i][0],p[1]-route[i][1]));
+  const total=lengths.reduce((a,b)=>a+b,0);let covered=0;
+  for(let i=0;i<lengths.length;i++){
+   const fraction=(covered+lengths[i]/2)/total;
+   const state=snapshot(plan,task.start+fraction*(task.end-task.start)).robots[task.actor];
+   const radians=state.heading*Math.PI/180;
+   const dx=route[i+1][0]-route[i][0],dy=route[i+1][1]-route[i][1];
+   assert(Math.abs(Math.sin(radians)-dx/lengths[i])<1e-8,'Front must follow horizontal velocity');
+   assert(Math.abs(-Math.cos(radians)-dy/lengths[i])<1e-8,'Front must follow vertical velocity');
+   covered+=lengths[i];
+  }
+  assert.equal(pose(route,1).heading,DOCK_HEADINGS[task.to],'Arrive facing target marker and IR line');
+ }
+ const end=snapshot(plan,plan.duration);
+ end.robots.forEach(r=>assert.equal(r.heading,n===1&&r.id===1?90:DOCK_HEADINGS.home));
+ const mid=snapshot(plan,plan.duration/2);snapshot(plan,plan.duration);assert.deepEqual(snapshot(plan,plan.duration/2),mid);
+}
+console.log('PASS: forward-facing travel on every segment, aligned docking headings and deterministic seek.');
