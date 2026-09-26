@@ -22,3 +22,18 @@ assert(j[1].loadStart<j[0].assemblyEnd,'second load overlaps first assembly');
 for(const job of j){assert.equal(snapshot(p,job.dispatch-.001).transport,snapshot(p,job.dispatch).transport+1);assert.equal(snapshot(p,job.palletEnd-.001).remaining,snapshot(p,job.palletEnd).remaining+1);}
 for(const bad of [0,-1,21,NaN,Infinity,1.2,'2'])assert.throws(()=>makePlan(bad));
 console.log(`PASS: ${cases} order sizes; counters, all 3 parts, concurrent work, exclusive resources, interlocks, seek and return-to-home.`);
+// All routes must follow floor aisles, with no diagonal cuts through workboards.
+const {path,position,POINTS}=require('../engine.js');
+const floorAreas=[[280,250,400,975],[50,640,435,850]];
+const inFloor=([x,y])=>floorAreas.some(([l,t,r,b])=>x>=l&&x<=r&&y>=t&&y<=b);
+for(const n of [1,2,3,20])for(const task of makePlan(n).tasks.filter(t=>t.type==='move')){
+ const route=path(task.from,task.to,task.actor);
+ const endpoint=place=>POINTS[place==='home'?'home'+(task.actor+1):place];
+ assert.deepEqual(route[0],endpoint(task.from));
+ assert.deepEqual(route.at(-1),endpoint(task.to));
+ for(let i=1;i<route.length;i++)assert(route[i][0]===route[i-1][0]||route[i][1]===route[i-1][1],'Only orthogonal aisle segments');
+ for(let i=0;i<=100;i++)assert(inFloor(position(route,i/100)),`${task.from} → ${task.to} leaves the floor aisle`);
+}
+assert(POINTS.home1[0]<POINTS.warehouse[0]&&POINTS.home1[1]>POINTS.warehouse[1]);
+assert(POINTS.assembly[0]>POINTS.warehouse[0]&&POINTS.assembly[1]>POINTS.warehouse[1]);
+console.log('PASS: photo-oriented floor layout, route endpoints, orthogonal aisles and workboard avoidance.');

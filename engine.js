@@ -1,7 +1,7 @@
 /* Deterministic, seekable process simulation. Durations are illustrative seconds. */
 (function (root) {
   'use strict';
-  const POINTS = { home1:[125,405], home2:[190,405], waiting:[390,360], warehouse:[180,155], assembly:[645,200] };
+  const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,700] };
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
   function makePlan(quantity) {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new RangeError('주문 수량은 1~20 사이의 정수로 입력하세요.');
@@ -66,8 +66,15 @@
   }
   function point(place,robot) {return POINTS[place==='home'?'home'+(robot+1):place];}
   function path(from,to,robot) {
-    const a=point(from,robot),b=point(to,robot);
-    return [a,[a[0],300],[b[0],300],b];
+    // Each bay joins the central vertical aisle; never cut across a workboard.
+    const branch=place=>{
+      const p=point(place,robot);
+      if(place==='home')return [p,[220,p[1]],[220,750],[340,750]];
+      if(place==='assembly')return [p,[400,750],[340,750]];
+      return [p,[340,750]];
+    };
+    const points=[...branch(from),...branch(to).reverse()];
+    return points.filter((p,i)=>!i||p[0]!==points[i-1][0]||p[1]!==points[i-1][1]);
   }
   function position(points,progress) {
     const lengths=points.slice(1).map((p,i)=>Math.hypot(p[0]-points[i][0],p[1]-points[i][1]));

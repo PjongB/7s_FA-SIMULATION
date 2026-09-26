@@ -8,7 +8,8 @@ font=base64.b64encode((root/'assets/PretendardVariable.woff2').read_bytes()).dec
 css=css.replace('assets/PretendardVariable.woff2','data:font/woff2;base64,'+font)
 photos={p.stem:'data:image/jpeg;base64,'+base64.b64encode(p.read_bytes()).decode() for p in (root/'assets').glob('*.jpg')}
 html=html.replace('<link rel="stylesheet" href="styles.css">','<style>'+css+'</style>')
-html=html.replace('src="assets/route.jpg"','src="'+photos['route']+'"')
+for key,data in photos.items():
+    html=html.replace('src="assets/'+key+'.jpg"','src="'+data+'"')
 html=html.replace('<script src="engine.js"></script>','<script>window.EMBEDDED_PHOTOS='+json.dumps(photos)+';</script><script>'+(root/'engine.js').read_text()+'</script>')
 html=html.replace('<script src="app.js"></script>','<script>'+(root/'app.js').read_text()+'</script>')
 (root/'robot3-simulation.html').write_text(html)

@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 const photoPath=key=>window.EMBEDDED_PHOTOS?.[key]||`assets/${key}.jpg`;
 const photos={
+ 'full-map':{title:'전체 맵 · 현장 배치',detail:'왼쪽 아래 초기위치, 중앙 위 자재창고, 오른쪽 아래 제작공정. 중앙 아래 테이프 박스가 교대 대기장소입니다.'},
  route:{title:'운반경로 및 대기위치',detail:'자재창고와 제작공정 사이의 운반 경로, 교대를 위한 대기장소입니다.'},
  warehouse:{title:'자재창고',detail:'로봇팔 1이 A제품 한 세트에 필요한 부품 3개를 준비하는 공간입니다.'},
  loading:{title:'버거 1 부품 적재',detail:'로봇팔 1이 버거 상판에 부품 3개를 싣습니다. 버거 2도 같은 적재 순서를 사용합니다.'},
@@ -11,14 +12,14 @@ const photos={
  waiting:{title:'버거 대기장소',detail:'다음 버거가 공정에 진입하기 전, 작업을 마친 버거가 이곳으로 이동합니다.'},
  home:{title:'버거 초기위치',detail:'버거 1과 2의 시작·복귀 위치입니다. 중간 대기장소와 별도로 관리합니다.'}
 };
-let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='route',lastEventKey='',lastFrame=0;
+let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
 const idlePlan=RobotSimulation.makePlan(2);
 function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;}
 function validateQuantity(){const n=Number($('quantity').value);if(!Number.isInteger(n)||n<1||n>20)throw Error('주문 수량을 1~20 사이의 정수로 입력해 주세요.');return n;}
 function setPhoto(key){if(currentPhoto!==key||!$('scene-image').getAttribute('src')){$('scene-image').src=photoPath(key);currentPhoto=key;}$('scene-image').alt=photos[key].title;}
 function openPhoto(key){$('dialog-image').src=photoPath(key);$('dialog-image').alt=photos[key].title;$('dialog-title').textContent=photos[key].title;$('dialog-description').textContent=photos[key].detail;$('photo-dialog').showModal();}
 function begin(run=true){try{plan=RobotSimulation.makePlan(validateQuantity());time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
-function reset(){plan=null;time=0;playing=false;following=true;lastEventKey='';setPhoto('route');render();}
+function reset(){plan=null;time=0;playing=false;following=true;lastEventKey='';setPhoto('full-map');render();}
 function step(direction){if(!plan){begin(false);return;}playing=false;const times=[...new Set(plan.events.map(e=>e.time))];time=direction>0?(times.find(t=>t>time+0.001)??plan.duration):([...times].reverse().find(t=>t<time-0.001)??0);render();}
 function togglePlay(){if(!plan){begin();return;}if(time>=plan.duration){time=0;lastEventKey='';}playing=!playing;render();}
 $('order-form').addEventListener('submit',e=>{e.preventDefault();begin();});
@@ -59,7 +60,7 @@ function render(){
  ['quantity','plus','minus','product'].forEach(id=>$(id).disabled=!!plan&&!s.done);$('start').disabled=!!plan&&!s.done;$('start').innerHTML=s.done?'<span>↻</span> 새 주문 · 시작':'<span>▶</span> 주문 · 시작';
  $('play').textContent=playing?'Ⅱ':'▶';$('play').setAttribute('aria-label',playing?'일시정지':'재생');$('elapsed').textContent=formatTime(time);$('duration').textContent=formatTime(plan?.duration||0);$('timeline').max=plan?.duration||100;$('timeline').value=time;$('timeline').disabled=!plan;$('previous').disabled=!plan||time===0;$('next').disabled=!!plan&&s.done;$('export').disabled=!plan;
  s.robots.forEach((r,i)=>{const g=$('robot'+(i+1));g.setAttribute('transform',`translate(${r.position.join(' ')})`);g.querySelector('.cargo').innerHTML=Array.from({length:r.parts},(_,n)=>`<rect x="${n*9}" width="7" height="6" rx="1" fill="${i?'#d99032':'#3979c6'}"/>`).join('');const d=$('device-b'+(i+1));d.querySelector('.device-status').textContent=r.status;d.querySelector('.part-dots').innerHTML=Array.from({length:3},(_,n)=>`<i class="${n<r.parts?'filled':''}"></i>`).join('');d.classList.toggle('working',s.active.some(t=>t.actor===i&&t.type==='move'));});
- $('jig').setAttribute('transform',`translate(${600+s.linear*68} 128)`);
+ $('jig').setAttribute('transform',`translate(${600-s.linear*95} 812)`);
  s.arms.forEach((v,i)=>{const d=$('device-a'+(i+1));d.querySelector('.device-status').textContent=v;d.classList.toggle('working',v!=='대기');const g=$('arm'+(i+1)+'-map');g.classList.toggle('active-arm',v!=='대기');g.querySelector('use').setAttribute('transform',v!=='대기'?`rotate(${Math.sin(time*2.6)*12})`:'rotate(0)');});
  if(plan){const scene=getScene(s);if(following)setPhoto(scene.key);$('scene-kicker').textContent=following?scene.kicker:'ON-SITE REFERENCE';$('scene-title').textContent=following?scene.title:photos[currentPhoto].title;$('scene-detail').textContent=following?scene.detail:photos[currentPhoto].detail;}
  else {$('scene-kicker').textContent=following?'READY TO START':'ON-SITE REFERENCE';$('scene-title').textContent=following?'주문을 기다리고 있어요':photos[currentPhoto].title;$('scene-detail').textContent=following?'Host PC에서 제품 수량을 입력하면 두 카운트가 설정되고 시뮬레이션이 시작됩니다.':photos[currentPhoto].detail;}
