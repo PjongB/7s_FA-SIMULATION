@@ -100,7 +100,9 @@ class HTTPTest(unittest.TestCase):
                 self.assertIn(b'host-client.js',r.read())
                 self.assertEqual(r.headers['Cache-Control'],'no-store')
             for name in ['host-client.js','engine.js','app.js','assets/full-map.jpg']:
-                with urllib.request.urlopen(base+'/'+name) as r:self.assertEqual(r.status,200)
+                with urllib.request.urlopen(base+'/'+name) as r:
+                    self.assertEqual(r.status,200)
+                    self.assertTrue(r.read())
             def post(action, origin=base, **data):
                 req=urllib.request.Request(base+'/api/'+action,json.dumps({'client_id':'http-test', 'message_id':action,**data}).encode(),{'Content-Type':'application/json','Origin':origin})
                 with urllib.request.urlopen(req) as r:return json.load(r)

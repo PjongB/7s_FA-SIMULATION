@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-host-1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-host-trips"></head>
 <body>
 <header class="topbar"><a class="brand" href="./" aria-label="Robot3 홈"><span class="brand-icon">R<span>3</span></span><strong>ROBOT3<span>FACTORY LAB</span></strong></a><nav aria-label="페이지"><button class="nav active" data-tab="simulation">공정 시뮬레이션</button><button class="nav" data-tab="gallery">현장 사진 <span>09</span></button></nav><span class="demo-badge"><i></i> 시나리오 데모</span></header>
 <main>
@@ -85,7 +85,7 @@
 <label><input id="host-auto" type="checkbox" disabled> 완료 회신 후 자동으로 다음 단계</label>
 <p id="host-progress">호스트 지시 → 웹 실행 → 완료 회신 → 다음 단계</p>
 <details><summary>통신 기록</summary><pre id="host-log"></pre></details>
-<small>현재 시나리오의 이벤트 단위 통신 시험입니다. 완료 회신은 웹에서 생성하며 실제 로봇·센서는 연결하지 않습니다.</small>
+<small>목적지까지의 이동은 중간 노드에서 끊지 않습니다. 작업 완료 지점에서 다음 지시를 기다립니다. 완료 회신은 웹에서 생성하며 실제 로봇·센서는 연결하지 않습니다.</small>
 </section>
 
 <div class="metrics"><article><span class="metric-label">주문 수량</span><div><strong id="total">—</strong><span>개</span></div><small>Host에서 설정한 A제품 수량</small></article><article><span class="metric-label"><i class="blue"></i> 운송 잔여</span><div><strong id="transport">—</strong><span>개</span></div><small>제작공정으로 출발하면 −1</small></article><article><span class="metric-label"><i class="orange"></i> 완제품 잔여</span><div><strong id="remaining">—</strong><span>개</span></div><small>파렛트 적재 성공 후 −1</small></article><article class="done-card"><span class="metric-label"><i class="green"></i> 적재 완료</span><div><strong id="completed">0</strong><span id="completed-unit">개</span><span id="completion-percent">0%</span></div><div class="small-progress"><i id="completion-bar"></i></div></article></div>
@@ -96,5 +96,5 @@
 <footer><span><strong>ROBOT3</strong> · 1차 통합 시연</span><p>사진 기반 공정 시나리오 · 이동 경로와 소요 시간은 설명용이며 실제 로봇을 제어하지 않습니다.</p><a href="https://rorobot.atlassian.net/wiki/spaces/robot3/pages/edit-v2/19759106" target="_blank" rel="noopener">공정 목표 문서 ↗</a></footer>
 </main>
 <dialog id="photo-dialog"><button id="close-dialog" aria-label="사진 닫기">×</button><img id="dialog-image" alt=""><div><h2 id="dialog-title"></h2><p id="dialog-description"></p></div></dialog>
-<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-host-1"></script><script src="app.js?v=20260926-host-1"></script>
+<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-host-trips"></script><script src="app.js?v=20260926-host-trips"></script>
 </body></html>
