@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-host-version"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-stage-panel"></head>
 <body>
 <header class="topbar"><a class="brand" href="./" aria-label="Robot3 홈"><span class="brand-icon">R<span>3</span></span><strong>ROBOT3<span>FACTORY LAB</span></strong></a><nav aria-label="페이지"><button class="nav active" data-tab="simulation">공정 시뮬레이션</button><button class="nav" data-tab="gallery">현장 사진 <span>09</span></button></nav><span class="demo-badge"><i></i> 시나리오 데모</span></header>
 <main>
@@ -8,6 +8,13 @@
 <section id="simulation-view">
 <div class="simulation-layout"><div class="simulation-main">
 <section class="map-panel"><div class="panel-heading"><div><span class="section-number">01</span><h2>공정 시뮬레이션</h2></div><div class="legend"><span><i class="blue"></i>버거 1</span><span><i class="orange"></i>버거 2</span><span class="map-scale">현장 배치도</span></div></div>
+<div class="map-stage-layout">
+<aside class="current-stage" aria-label="현재 공정 단계">
+<p class="eyebrow">CURRENT STEP</p><h3>현재 단계</h3>
+<div class="stage-live" aria-live="polite" aria-atomic="true"><span id="stage-status" class="stage-status">주문 대기</span><p id="stage-number" class="stage-number">자동 시뮬레이션</p><h4 id="stage-title">주문을 기다리고 있어요</h4><p id="stage-detail">수량을 입력하고 주문을 시작하세요.</p></div>
+<div class="stage-work"><strong id="stage-work-label">장비 상태</strong><ul id="stage-work-list"><li>버거 1·2 초기위치 대기</li></ul></div>
+<p class="stage-hint">주행 · 회전 · 조립 상태를 실시간으로 표시합니다.</p>
+</aside>
 <div class="map-wrapper"><svg id="factory-map" viewBox="0 0 680 1060" role="img" aria-labelledby="map-title map-desc"><title id="map-title">Robot3 공정 이동 시뮬레이션</title><desc id="map-desc">사용자가 지정한 방향으로 왼쪽 아래 초기위치, 중앙 위 자재창고, 오른쪽 아래 제작공정을 배치했습니다. 중앙 통로와 아래쪽 대기장소가 연결됩니다. 치수와 이동 시간은 설명용입니다.</desc><defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".75" fill="#d4dde2"/></pattern><filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".12"/></filter><g id="robot-shape"><rect x="-23" y="-16" width="7" height="30" rx="3" fill="#273a47"/><rect x="16" y="-16" width="7" height="30" rx="3" fill="#273a47"/><rect x="-18" y="-22" width="36" height="42" rx="9" fill="white" stroke="currentColor" stroke-width="3"/><rect x="-12" y="-15" width="24" height="23" rx="3" fill="currentColor" opacity=".12"/><circle cy="-8" r="6" fill="#273a47"/><path d="M-9 -27 L0 -43 L9 -27" fill="currentColor"/></g><g id="arm-shape"><rect x="-17" y="-8" width="34" height="16" rx="5" fill="#31444e"/><path d="M0 0 L-19 -24 L2 -43 L24 -39" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-19" cy="-24" r="5" fill="#263b46"/><circle cx="2" cy="-43" r="4" fill="#263b46"/><path d="M24 -44 v12 m0 -12 h8 m-8 12 h8" fill="none" stroke="#263b46" stroke-width="3"/></g></defs>
 <rect width="680" height="1060" fill="#f1f3f2"/>
 <rect x="20" y="20" width="640" height="1020" rx="8" fill="url(#grid)" stroke="#d6dddf"/>
@@ -66,7 +73,7 @@
 <g id="dock-cues" aria-label="대기장소를 제외한 ArUco 표식과 목표 위치별 후방 적외선 센서 검은 감지선"></g>
 <g id="robot1" color="#3576c5" filter="url(#shadow)"><g class="robot-body"><use href="#robot-shape"/><rect x="-9" y="19" width="18" height="4" rx="1" fill="#111"/><g class="cargo" transform="translate(-12 12)"></g></g><text y="49" text-anchor="middle" class="robot-label" fill="#24588f">버거 1</text></g>
 <g id="robot2" color="#d99032" filter="url(#shadow)"><g class="robot-body"><use href="#robot-shape"/><rect x="-9" y="19" width="18" height="4" rx="1" fill="#111"/><g class="cargo" transform="translate(-12 12)"></g></g><text y="49" text-anchor="middle" class="robot-label" fill="#966021">버거 2</text></g>
-</svg><p class="dock-legend"><strong>▲</strong> 버거 전방 · <strong>AR</strong> ArUco 위치 표식 · <span class="black-line-key"></span> 후방 적외선 감지선<br><small>대기장소에는 ArUco 마커 없이 후방 IR 감지선만 있습니다. 표식과 센서는 배치 설명용이며 실제 마커 ID·센서 입력과 연결되지 않습니다.</small></p></div>
+</svg><p class="dock-legend"><strong>▲</strong> 버거 전방 · <strong>AR</strong> ArUco 위치 표식 · <span class="black-line-key"></span> 후방 적외선 감지선<br><small>대기장소에는 ArUco 마커 없이 후방 IR 감지선만 있습니다. 표식과 센서는 배치 설명용이며 실제 마커 ID·센서 입력과 연결되지 않습니다.</small></p></div></div>
 <div class="transport-controls"><div class="play-buttons"><button id="previous" class="icon-button" aria-label="이전 이벤트"><svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M5 4v12M15 4l-8 6 8 6Z" fill="currentColor" stroke="currentColor" stroke-width="1.5"/></svg></button><button id="play" class="play-button" aria-label="재생 또는 일시정지">▶</button><button id="next" class="icon-button" aria-label="다음 이벤트"><svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M15 4v12M5 4l8 6-8 6Z" fill="currentColor" stroke="currentColor" stroke-width="1.5"/></svg></button><button id="reset" class="text-button">↺ 초기화</button></div><div class="scrubber"><span id="elapsed">00:00</span><input id="timeline" type="range" min="0" max="100" value="0" step="0.05" aria-label="시뮬레이션 진행 위치"><span id="duration">00:00</span></div><label class="speed-label">속도 <select id="speed" aria-label="재생 속도"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div>
 </section>
 <section class="devices"><div class="device" id="device-b1"><span class="device-icon blue-text">◉</span><div><strong>버거 1</strong><small>/burger1</small></div><span class="device-status">초기위치 대기</span><div class="part-dots" aria-label="적재 부품"></div></div><div class="device" id="device-b2"><span class="device-icon orange-text">◉</span><div><strong>버거 2</strong><small>/burger2</small></div><span class="device-status">초기위치 대기</span><div class="part-dots" aria-label="적재 부품"></div></div><div class="device" id="device-a1"><span class="device-icon">⌁</span><div><strong>로봇팔 1</strong><small>부품 적재</small></div><span class="device-status">대기</span></div><div class="device" id="device-a2"><span class="device-icon">⌁</span><div><strong>로봇팔 2</strong><small>티칭 조립</small></div><span class="device-status">대기</span></div><div class="device" id="device-a3"><span class="device-icon">⌁</span><div><strong>로봇팔 3</strong><small>파렛트 적재</small></div><span class="device-status">대기</span></div></section>
@@ -97,5 +104,5 @@
 <footer><span><strong>ROBOT3</strong> · 1차 통합 시연</span><p>사진 기반 공정 시나리오 · 이동 경로와 소요 시간은 설명용이며 실제 로봇을 제어하지 않습니다.</p><a href="https://rorobot.atlassian.net/wiki/spaces/robot3/pages/edit-v2/19759106" target="_blank" rel="noopener">공정 목표 문서 ↗</a></footer>
 </main>
 <dialog id="photo-dialog"><button id="close-dialog" aria-label="사진 닫기">×</button><img id="dialog-image" alt=""><div><h2 id="dialog-title"></h2><p id="dialog-description"></p></div></dialog>
-<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-host-version"></script><script src="app.js?v=20260926-host-version"></script>
+<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-stage-panel"></script><script src="app.js?v=20260926-stage-panel"></script>
 </body></html>

@@ -73,8 +73,40 @@ function getScene(s){
  const names={home:'초기위치 복귀',waiting:'대기장소 이동',warehouse:'자재창고 이동',assembly:'제작공정 이동'};
  return {key:f.to==='home'?'home':f.to==='waiting'?'waiting':f.to==='warehouse'?'warehouse':'route',kicker:`BURGER ${f.actor+1} · MOVING`,title:`버거 ${f.actor+1} · ${names[f.to]}`,detail:f.to==='assembly'?'Host가 운송 시작을 확인해 운송 잔여를 1 감소시켰습니다. 조립 위치로 이동 중입니다.':f.to==='home'?(f.from==='waiting'?'마지막 운송 버거의 제작공정 도킹이 끝나 통로가 비었습니다. 대기장소에서 초기위치로 복귀합니다.':'조립 작업을 마쳐 초기위치로 복귀합니다. 진행 중인 완제품 적재는 계속됩니다.'):f.to==='waiting'?'교차 통로까지 이동한 뒤 출구를 바라보도록 정렬하고, 대기장소에 후진 주차합니다.':'자재창고에 도착하면 로봇팔 1이 A제품 부품 3개를 적재합니다.'};
 }
+function renderCurrentStage(s){
+ const hs=HostBridge.enabled?HostBridge.state:null;
+ const names={home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
+ const set=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
+ let status=!plan?'주문 대기':s.done?'주문 완료':playing?'실행 중':'일시정지';
+ let title=plan?getScene(s).title:'주문을 기다리고 있어요';
+ let detail=plan?getScene(s).detail:'수량을 입력하고 주문을 시작하세요.';
+ let label='함께 진행 중인 작업';
+ let items=plan?s.active.filter(t=>t.type!=='gate').map(t=>{
+  const product=t.job==null?'':` · 제품 #${t.job+1}`;
+  if(t.type==='move')return `버거 ${t.actor+1} → ${names[t.to]} · ${s.robots[t.actor].turning?'제자리 회전':s.robots[t.actor].reversing?'후진':'전진'}`;
+  return ({load:'로봇팔 1 · 부품 적재',assemble:'로봇팔 2 · 조립',pallet:'로봇팔 3 · 파렛트 적재',prepare:'리니어 · A지그 준비',reset:'리니어 · 원점 복귀'}[t.type]||t.type)+product;
+ }):[];
+ if(HostBridge.enabled){
+  status=!HostBridge.online?'연결 대기 · 정지':({idle:'주문 대기',running:'호스트 지시 실행 중',waiting:'완료 · 다음 지시 대기',paused:'호스트 일시정지',done:'주문 완료'}[hs?.status]||'연결 대기');
+  if(hs?.status==='waiting'){
+   title=`${hs.acked_seq}단계 완료`;
+   detail='목적지까지의 이동 또는 작업을 마쳤습니다. 호스트의 다음 지시를 기다립니다.';
+   label='이번 단계에서 완료한 작업';
+   items=(hs.counters?.events||[]).filter(e=>['arrive','assembly_end','jig_ready','jig_home','pallet_end'].includes(e.kind)||(e.kind==='part'&&e.part===3)).map(e=>e.text);
+  }else if(!HostBridge.online||hs?.status==='paused'){
+   label='정지된 작업';
+   detail=!HostBridge.online?'호스트 연결을 확인하세요. 연결 복구 후 재개 지시가 필요합니다.':'호스트에서 재개하면 현재 위치부터 이어서 실행합니다.';
+  }else if(hs?.status==='running'&&!playing){status='완료 회신 확인 중';}
+ }
+ const number=HostBridge.enabled?(hs?.quantity?`호스트 단계 ${hs.command?.seq??hs.acked_seq} / ${hs.stage_count??'—'}`:'호스트 통신 모드'):'자동 시뮬레이션';
+ if(!items.length){label='장비 상태';items=[s.done?'버거 1·2 복귀 및 파렛트 적재 완료':!plan?'버거 1·2 초기위치 대기':'다음 작업 준비'];}
+ set('stage-status',status);set('stage-number',number);set('stage-title',title);set('stage-detail',detail);set('stage-work-label',label);
+ const list=$('stage-work-list'),key=JSON.stringify(items);
+ if(list.dataset.items!==key){list.replaceChildren(...items.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));list.dataset.items=key;}
+}
 function render(){
  const s=plan?RobotSimulation.snapshot(plan,time):{...RobotSimulation.snapshot(idlePlan,0),events:[],active:[],robots:[0,1].map(id=>({id,position:RobotSimulation.POINTS['home'+(id+1)],parts:0,heading:RobotSimulation.DOCK_HEADINGS.home,status:'초기위치 대기'})),linear:0,arms:['대기','대기','대기'],done:false};
+ renderCurrentStage(s);
  $('total').textContent=plan?plan.quantity:'—';$('transport').textContent=plan?s.transport:'—';$('remaining').textContent=plan?s.remaining:'—';$('completed').textContent=plan?s.completed:0;
  const percent=plan?Math.round(s.completed/plan.quantity*100):0;$('completion-percent').textContent=percent+'%';$('completion-bar').style.width=percent+'%';$('pallet-count').textContent=(plan?s.completed:0)+'개 적재';
  $('run-status').textContent=!plan?'주문 대기':s.done?'주문 완료':playing?'시뮬레이션 진행 중':'일시정지';
