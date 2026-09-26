@@ -39,16 +39,16 @@ function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${Str
 function validateQuantity(){const n=Number($('quantity').value);if(!Number.isInteger(n)||n<1||n>20)throw Error('주문 수량을 1~20 사이의 정수로 입력해 주세요.');return n;}
 function setPhoto(key){if(currentPhoto!==key||!$('scene-image').getAttribute('src')){$('scene-image').src=photoPath(key);currentPhoto=key;}$('scene-image').alt=photos[key].title;}
 function openPhoto(key){$('dialog-image').src=photoPath(key);$('dialog-image').alt=photos[key].title;$('dialog-title').textContent=photos[key].title;$('dialog-description').textContent=photos[key].detail;$('photo-dialog').showModal();}
-function begin(run=true){try{plan=RobotSimulation.makePlan(validateQuantity());time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
-function reset(){plan=null;time=0;playing=false;following=true;lastEventKey='';setPhoto('full-map');render();}
-function step(direction){if(!plan){begin(false);return;}playing=false;const times=[...new Set(plan.events.map(e=>e.time))];time=direction>0?(times.find(t=>t>time+0.001)??plan.duration):([...times].reverse().find(t=>t<time-0.001)??0);render();}
-function togglePlay(){if(!plan){begin();return;}if(time>=plan.duration){time=0;lastEventKey='';}playing=!playing;render();}
+function begin(run=true){if(HostBridge.enabled){try{HostBridge.start(validateQuantity());}catch(e){$('form-error').textContent=e.message;}return;}try{plan=RobotSimulation.makePlan(validateQuantity());time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
+function reset(){if(HostBridge.enabled)return;plan=null;time=0;playing=false;following=true;lastEventKey='';setPhoto('full-map');render();}
+function step(direction){if(HostBridge.enabled)return;if(!plan){begin(false);return;}playing=false;const times=[...new Set(plan.events.map(e=>e.time))];time=direction>0?(times.find(t=>t>time+0.001)??plan.duration):([...times].reverse().find(t=>t<time-0.001)??0);render();}
+function togglePlay(){if(HostBridge.enabled)return;if(!plan){begin();return;}if(time>=plan.duration){time=0;lastEventKey='';}playing=!playing;render();}
 $('order-form').addEventListener('submit',e=>{e.preventDefault();begin();});
 $('plus').onclick=()=>$('quantity').value=Math.min(20,Math.max(1,Number($('quantity').value)||1)+1);
 $('minus').onclick=()=>$('quantity').value=Math.max(1,(Number($('quantity').value)||1)-1);
 $('play').onclick=togglePlay;$('reset').onclick=reset;$('next').onclick=()=>step(1);$('previous').onclick=()=>step(-1);
 $('speed').onchange=e=>speed=Number(e.target.value);
-$('timeline').oninput=e=>{if(!plan)return;playing=false;time=Number(e.target.value);render();};
+$('timeline').oninput=e=>{if(!plan||HostBridge.enabled)return;playing=false;time=Number(e.target.value);render();};
 $('follow').onclick=()=>{following=!following;render();};
 $('photo-open').onclick=()=>openPhoto(currentPhoto);
 $('close-dialog').onclick=()=>$('photo-dialog').close();
@@ -91,8 +91,40 @@ function render(){
  const next=plan?.jobs.find(j=>j.dispatch>time+1e-7);const prev=next?plan.jobs[next.id-1]:null;
  const gates=plan?[!prev||time>=prev.palletEnd,!prev||time>=prev.waitEnd,!!next?time>=next.loaded:true]:[false,false,false];
  $('gates').querySelectorAll('li').forEach((li,i)=>li.classList.toggle('passed',gates[i]));
+ if(HostBridge.enabled){
+  ['play','reset','next','previous','timeline'].forEach(id=>$(id).disabled=true);
+  const hs=HostBridge.state;
+  if(hs?.quantity){
+   const c=hs.counters||{transport:hs.quantity,remaining:hs.quantity,completed:0};
+   $('transport').textContent=c.transport;$('remaining').textContent=c.remaining;$('completed').textContent=c.completed;
+   const pct=Math.round(c.completed/hs.quantity*100);$('completion-percent').textContent=pct+'%';$('completion-bar').style.width=pct+'%';
+  }
+  const ready=HostBridge.online&&['idle','done'].includes(hs?.status);
+  ['quantity','plus','minus','start'].forEach(id=>$(id).disabled=!ready);
+  $('run-status').textContent=!HostBridge.online?'호스트 연결 대기':hs?.status==='waiting'?'호스트 다음 지시 대기':hs?.status==='paused'?'호스트 일시정지':hs?.status==='done'?'호스트 주문 완료':playing?'호스트 단계 실행 중':'호스트 주문 대기';
+ }else{$('play').disabled=false;$('reset').disabled=false;}
  const key=plan?`${plan.quantity}:${s.events.length}`:'idle';
  if(key!==lastEventKey){lastEventKey=key;$('event-count').textContent=s.events.length+'건';$('event-log').innerHTML=s.events.length?[...s.events].reverse().map(e=>`<div class="event-row ${['order','dispatch','pallet_end','complete'].includes(e.kind)?'counter':''}"><time>${formatTime(e.time)}</time><i class="event-dot"></i><span>${e.text}</span><span class="tag">${e.kind.toUpperCase()}</span></div>`).join(''):'<div class="empty-log">주문을 시작하면 장비 동작과 카운트 변경 이력이 표시됩니다.</div>';}
 }
-function frame(now){if(lastFrame&&playing&&plan){time=Math.min(plan.duration,time+Math.min((now-lastFrame)/1000,.2)*speed);if(time>=plan.duration)playing=false;render();}lastFrame=now;requestAnimationFrame(frame);}
-render();requestAnimationFrame(frame);
+function applyHostState(state){
+ playing=false;
+ if(!HostBridge.enabled){reset();return;}
+ if(!state){render();return;}
+ if(!state.quantity){plan=null;time=0;lastEventKey='';}
+ else{
+  if(!plan||plan.hostOrder!==state.order_id){plan=RobotSimulation.makePlan(state.quantity);plan.hostOrder=state.order_id;time=state.time;following=true;lastEventKey='';}
+  time=Math.max(time,state.time);
+  playing=HostBridge.online&&state.status==='running';
+ }
+ render();
+}
+function frame(now){
+ if(lastFrame&&playing&&plan){
+  const limit=HostBridge.enabled?(HostBridge.state?.command?.target_time??time):plan.duration;
+  time=Math.min(limit,time+Math.min((now-lastFrame)/1000,.2)*speed);
+  if(time>=limit){playing=false;if(HostBridge.enabled)HostBridge.complete();}
+  render();
+ }
+ lastFrame=now;requestAnimationFrame(frame);
+}
+render();HostBridge.init(applyHostState);requestAnimationFrame(frame);

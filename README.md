@@ -66,3 +66,12 @@
 공식 절차: [GitHub Pages 사용자 지정 워크플로](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 사이트는 HTML/CSS/JavaScript와 로컬 사진·폰트만 사용하므로 별도 백엔드나 API 키가 필요하지 않습니다.
 단일 HTML은 생성 산출물이므로 Git에서 제외했습니다. 필요한 경우 `python3 build_standalone.py`로 다시 만듭니다.
+
+
+## 호스트 PC 통신 시험
+
+공개 웹사이트의 **호스트 시험 파일 다운로드**를 받아 압축을 푼 뒤, 그 폴더에서 `python3 host/server.py`를 실행하고 `http://127.0.0.1:8082/?host=1`에 접속합니다. Python 3.10 이상만 필요합니다. 이 저장소에서는 같은 명령으로 바로 실행할 수 있습니다.
+
+호스트가 다음 이벤트 시각까지의 실행을 지시하고 웹이 완료를 회신합니다. **다음 단계**, **완료 회신 후 자동 진행**, **일시정지·재개**, **시험 초기화**, **통신 기록**을 제공합니다. 완료 신호 중복·순서 오류·이전 주문 신호를 검사하며 통신 실패 시 정지합니다. 실제 장비는 연결하지 않습니다. 기존 자동 시뮬레이션은 공개 사이트에서 그대로 사용할 수 있습니다.
+
+실행 방법과 프로토콜: [host/README.md](host/README.md).

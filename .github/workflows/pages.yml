@@ -23,11 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Test simulation rules
-        run: node tests/engine.test.cjs
+        run: |
+          node host/build_scenarios.cjs
+          node tests/engine.test.cjs
+          node tests/host-client.test.cjs
+          python3 -m unittest discover -s tests -p "test_host.py"
+          python3 host/package.py
       - name: Prepare static website
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js engine.js _site/
+          cp index.html styles.css app.js engine.js host-client.js host-test.zip _site/
           cp -R assets _site/assets
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

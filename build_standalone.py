@@ -11,6 +11,7 @@ html=re.sub(r'<link rel="stylesheet" href="styles\.css(?:\?[^"]*)?">',lambda _: 
 for key,data in photos.items():
     html=html.replace('src="assets/'+key+'.jpg"','src="'+data+'"')
 html=re.sub(r'<script src="engine\.js(?:\?[^"]*)?"></script>',lambda _: '<script>window.EMBEDDED_PHOTOS='+json.dumps(photos)+';</script><script>'+(root/'engine.js').read_text()+'</script>',html)
+html=re.sub(r'<script src="host-client\.js(?:\?[^"]*)?"></script>',lambda _: '<script>'+(root/'host-client.js').read_text()+'</script>',html)
 html=re.sub(r'<script src="app\.js(?:\?[^"]*)?"></script>',lambda _: '<script>'+(root/'app.js').read_text()+'</script>',html)
 (root/'robot3-simulation.html').write_text(html)
 print('Offline HTML created:',(root/'robot3-simulation.html').stat().st_size,'bytes')
