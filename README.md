@@ -4,6 +4,7 @@
 
 ## 열기
 
+- **웹 접속:** [Robot3 공정 시뮬레이션](https://pjongb.github.io/7s_FA-SIMULATION/) — GitHub Pages 배포 완료 후 이용할 수 있습니다.
 - **설치 없이:** `robot3-simulation.html` 한 파일을 PC로 내려받아 브라우저에서 엽니다. 사진 8장과 한글 폰트도 포함되어 있어 인터넷 없이 동작합니다.
 - **로컬 서버:** `bash start.sh` 실행 후 `http://localhost:8082`에 접속합니다.
 - **VS Code Remote SSH:** Ports 탭에 `8082`를 추가하고 전달된 localhost 주소를 엽니다. 서버는 기본적으로 127.0.0.1에만 바인딩됩니다.
