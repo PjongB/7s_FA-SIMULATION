@@ -146,3 +146,13 @@ for(const n of [1,2,3,20]){
  }
 }
 console.log('PASS: wall-facing homes, reverse exits, right turns to warehouse/assembly and junction half-turn before forward return.');
+
+for(let n=2;n<=20;n++){
+ const plan=makePlan(n),last=plan.jobs.at(-1),other=1-last.robot;
+ const returning=plan.tasks.find(t=>t.actor===other&&t.type==='move'&&t.from==='waiting'&&t.to==='home');
+ assert(returning.start>=last.arrived,'Wait until the other robot finishes assembly docking');
+ assert.equal(snapshot(plan,last.arrived-.001).robots[other].status,'대기장소 대기');
+ assert(!plan.tasks.some(t=>t.actor===other&&t.type==='move'&&t.start<last.arrived&&t.end>last.dispatch),'No simultaneous travel during final delivery');
+ assert.equal(snapshot(plan,last.arrived).transport,0);
+}
+console.log('PASS: final delivery docking completes before the waiting robot returns home, orders 2–20.');

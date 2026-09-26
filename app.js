@@ -68,7 +68,7 @@ function getScene(s){
  if(f.type==='prepare'||f.type==='reset')return {key:'process',kicker:'LINEAR MOTOR',title:f.type==='prepare'?'A지그 위치 준비':'리니어 모터 복귀',detail:f.type==='prepare'?'다음 조립에 사용할 A지그를 작업 위치로 이동합니다.':'조립이 끝나 리니어 모터를 초기위치로 되돌립니다.'};
  if(f.type==='gate')return {key:'waiting',kicker:'INTERLOCK WAIT',title:'제작공정 진입 대기',detail:'부품 적재 완료. 앞 제품의 파렛트 적재와 앞 버거의 대기장소 도착을 기다립니다.'};
  const names={home:'초기위치 복귀',waiting:'대기장소 이동',warehouse:'자재창고 이동',assembly:'제작공정 이동'};
- return {key:f.to==='home'?'home':f.to==='waiting'?'waiting':f.to==='warehouse'?'warehouse':'route',kicker:`BURGER ${f.actor+1} · MOVING`,title:`버거 ${f.actor+1} · ${names[f.to]}`,detail:f.to==='assembly'?'Host가 운송 시작을 확인해 운송 잔여를 1 감소시켰습니다. 조립 위치로 이동 중입니다.':f.to==='home'?'추가 운송 배정이 없어 초기위치로 복귀합니다. 진행 중인 제품의 조립·적재는 계속됩니다.':f.to==='waiting'?'교차 통로까지 이동한 뒤 출구를 바라보도록 정렬하고, 대기장소에 후진 주차합니다.':'자재창고에 도착하면 로봇팔 1이 A제품 부품 3개를 적재합니다.'};
+ return {key:f.to==='home'?'home':f.to==='waiting'?'waiting':f.to==='warehouse'?'warehouse':'route',kicker:`BURGER ${f.actor+1} · MOVING`,title:`버거 ${f.actor+1} · ${names[f.to]}`,detail:f.to==='assembly'?'Host가 운송 시작을 확인해 운송 잔여를 1 감소시켰습니다. 조립 위치로 이동 중입니다.':f.to==='home'?(f.from==='waiting'?'마지막 운송 버거의 제작공정 도킹이 끝나 통로가 비었습니다. 대기장소에서 초기위치로 복귀합니다.':'조립 작업을 마쳐 초기위치로 복귀합니다. 진행 중인 완제품 적재는 계속됩니다.'):f.to==='waiting'?'교차 통로까지 이동한 뒤 출구를 바라보도록 정렬하고, 대기장소에 후진 주차합니다.':'자재창고에 도착하면 로봇팔 1이 A제품 부품 3개를 적재합니다.'};
 }
 function render(){
  const s=plan?RobotSimulation.snapshot(plan,time):{...RobotSimulation.snapshot(idlePlan,0),events:[],active:[],robots:[0,1].map(id=>({id,position:RobotSimulation.POINTS['home'+(id+1)],parts:0,heading:RobotSimulation.DOCK_HEADINGS.home,status:'초기위치 대기'})),linear:0,arms:['대기','대기','대기'],done:false};

@@ -68,7 +68,7 @@
     const last=jobs[quantity-1];
     if(quantity>1) {
       const other=1-last.robot;
-      tails[other]=move(other,'waiting','home',Math.max(last.dispatch,tails[other]),3);
+      tails[other]=move(other,'waiting','home',Math.max(last.arrived,tails[other]),3);
     }
     const duration=Math.max(...tails,last.palletEnd);
     event(duration,'complete',{text:`주문 완료 · A제품 ${quantity}개 적재 / 버거 1·2 초기위치 확인`,photo:'pallet'});
