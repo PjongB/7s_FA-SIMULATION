@@ -38,7 +38,9 @@ class Host:
     def state(self):
         self.check_timeout()
         stage = SCENARIOS[str(self.quantity)][self.index] if self.index >= 0 else None
-        return {'protocol': 1, 'status': self.status, 'order_id': self.order_id,
+        return {'protocol': 1, 'scenario_mode': 'destination-v2',
+                'sample_stage_count': len(SCENARIOS['2']),
+                'stage_count': len(SCENARIOS[str(self.quantity)]) if self.quantity else 0, 'status': self.status, 'order_id': self.order_id,
                 'quantity': self.quantity, 'acked_seq': self.index + 1,
                 'time': stage['time'] if stage else 0, 'counters': stage,
                 'command': self.pending, 'auto': self.auto, 'log': list(self.log)}
@@ -205,7 +207,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     with make_server(args.port) as server:
         print(f'Host PC 시험 화면: http://127.0.0.1:{server.server_port}/?host=1', flush=True)
-        print('Ctrl+C로 종료 · 서버 재시작 시 시험 상태 초기화', flush=True)
+        print(f'목적지 단위 v2 · A제품 2개: {len(SCENARIOS["2"])}단계 · {ROOT}', flush=True)
+        print('Ctrl+C로 종료 · git pull 후에는 서버를 종료하고 다시 실행하세요.', flush=True)
         try:
             server.serve_forever()
         except KeyboardInterrupt:

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-host-trips"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-host-version"></head>
 <body>
 <header class="topbar"><a class="brand" href="./" aria-label="Robot3 홈"><span class="brand-icon">R<span>3</span></span><strong>ROBOT3<span>FACTORY LAB</span></strong></a><nav aria-label="페이지"><button class="nav active" data-tab="simulation">공정 시뮬레이션</button><button class="nav" data-tab="gallery">현장 사진 <span>09</span></button></nav><span class="demo-badge"><i></i> 시나리오 데모</span></header>
 <main>
@@ -79,6 +79,7 @@
 <section class="host-test" aria-label="호스트 PC 통신 시험">
 <h3>호스트 PC 통신 시험</h3>
 <p id="host-status" role="status">자동 재생 모드</p>
+<p id="host-version" role="status"></p>
 <button id="host-connect" type="button">호스트 연결</button>
 <div id="host-local-help"><p>호스트 PC에서 시험 프로그램을 실행하고 안내된 로컬 주소로 접속하세요.</p><a href="host-test.zip" download>호스트 시험 파일 다운로드 ↓</a><code>python3 host/server.py</code><small>압축을 풀고 해당 폴더에서 실행 · Python 3.10 이상 · 별도 패키지 불필요</small></div>
 <div class="host-test-actions"><button id="host-next" disabled>다음 단계</button><button id="host-pause" disabled>일시정지</button><button id="host-reset" disabled>시험 초기화</button></div>
@@ -96,5 +97,5 @@
 <footer><span><strong>ROBOT3</strong> · 1차 통합 시연</span><p>사진 기반 공정 시나리오 · 이동 경로와 소요 시간은 설명용이며 실제 로봇을 제어하지 않습니다.</p><a href="https://rorobot.atlassian.net/wiki/spaces/robot3/pages/edit-v2/19759106" target="_blank" rel="noopener">공정 목표 문서 ↗</a></footer>
 </main>
 <dialog id="photo-dialog"><button id="close-dialog" aria-label="사진 닫기">×</button><img id="dialog-image" alt=""><div><h2 id="dialog-title"></h2><p id="dialog-description"></p></div></dialog>
-<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-host-trips"></script><script src="app.js?v=20260926-host-trips"></script>
+<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-host-version"></script><script src="app.js?v=20260926-host-version"></script>
 </body></html>

@@ -16,6 +16,8 @@ class HostTest(unittest.TestCase):
         self.h = m.Host(lambda: self.now)
         self.serial = 0
         self.send('connect')
+        self.assertEqual(self.h.state()['scenario_mode'], 'destination-v2')
+        self.assertEqual(self.h.state()['sample_stage_count'], 11)
 
     def send(self, action, **data):
         self.serial += 1

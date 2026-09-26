@@ -29,7 +29,8 @@
   el('host-reset').disabled=!bridge.online;
   el('host-auto').disabled=!bridge.online;
   el('host-auto').checked=!!s?.auto;
-  el('host-progress').textContent=s?.order_id?`주문 ${s.order_id} · 완료 회신 ${s.acked_seq}단계 · 다음 ${s.command?.seq||'—'}`:'호스트 지시 → 웹 실행 → 완료 회신 → 다음 단계';
+  el('host-version').textContent=!bridge.enabled?'':!s?'서버 버전 확인 대기':s.scenario_mode==='destination-v2'?`목적지 단위 v2 · 2개 주문 ${s.sample_stage_count}단계`:'구버전 호스트 서버 · 터미널에서 Ctrl+C 후 다시 실행하세요.';
+  el('host-progress').textContent=s?.order_id?`주문 ${s.order_id} · 완료 회신 ${s.acked_seq}/${s.stage_count??'?'}단계 · 다음 ${s.command?.seq||'—'}`:'호스트 지시 → 웹 실행 → 완료 회신 → 다음 단계';
   el('host-log').textContent=(s?.log||[]).slice(-12).map(x=>`${x.at} ${x.kind}  ${x.detail}`).join('\n');
  }
  function call(action,data={}){
