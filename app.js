@@ -9,7 +9,7 @@ const photos={
  assembly:{title:'로봇팔 2 · 티칭 조립',detail:'버거가 도착하고 A지그 위치가 준비되면 티칭 동작으로 제품을 조립합니다.'},
  process:{title:'제작공정 · 리니어 모터',detail:'조립 전에는 A지그 위치로, 조립 후에는 초기위치로 이동합니다.'},
  pallet:{title:'로봇팔 3 · 완제품 적재',detail:'완제품을 파렛트로 옮긴 뒤 성공을 확인하면 Host의 완제품 잔여 카운트가 줄어듭니다.'},
- waiting:{title:'버거 대기장소',detail:'교차 통로에서 출구를 바라보도록 정렬한 뒤 후진 주차합니다. 대기 후에는 전진으로 출차합니다.'},
+ waiting:{title:'버거 대기장소',detail:'교차 통로에서 출구를 바라보도록 정렬한 뒤 후진 주차합니다. ArUco 마커 없이 후방 IR 센서가 검은 감지선을 감지하면 정지하고, 대기 후에는 전진으로 출차합니다.'},
  home:{title:'버거 초기위치',detail:'두 버거는 왼쪽 벽의 마커를 바라보고 주차합니다. 후진으로 출차하고, 복귀 시에는 전진 진입 후 후방 센서가 감지선에 닿는 위치에서 멈춥니다.'}
 };
 let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
@@ -22,14 +22,17 @@ Object.entries(RobotSimulation.POINTS).forEach(([place,point])=>{
  cue.setAttribute('class','dock-cue');
  cue.setAttribute('transform',`translate(${point.join(' ')}) rotate(${RobotSimulation.DOCK_HEADINGS[kind]})`);
  const title=document.createElementNS(svgNS,'title');
- title.textContent=`${place}: ArUco 위치 표식과 후방 적외선 센서용 검은 정지선 (개념 표시)`;
+ title.textContent=kind==='waiting'?'대기장소: ArUco 마커 없음 · 후방 IR 센서용 검은 정지선':`${place}: ArUco 위치 표식과 후방 적외선 센서용 검은 정지선 (개념 표시)`;
  cue.append(title);
  const line=document.createElementNS(svgNS,'path');
  line.setAttribute('d','M-29 21 H29');line.setAttribute('stroke','#111');line.setAttribute('stroke-width','6');
  cue.append(line);
+ if(kind!=='waiting'){
  const marker=document.createElementNS(svgNS,'g');marker.setAttribute('transform',`translate(0 -55) rotate(${-RobotSimulation.DOCK_HEADINGS[kind]})`);
  marker.innerHTML='<rect x="-14" y="-14" width="28" height="28" fill="white" stroke="#111" stroke-width="3"/><text y="5" text-anchor="middle" font-size="13" font-weight="800" fill="#111">AR</text>';
- cue.append(marker);$('dock-cues').append(cue);
+ cue.append(marker);
+ }
+ $('dock-cues').append(cue);
 });
 
 function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;}
