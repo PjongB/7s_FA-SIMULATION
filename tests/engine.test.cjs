@@ -37,3 +37,30 @@ for(const n of [1,2,3,20])for(const task of makePlan(n).tasks.filter(t=>t.type==
 assert(POINTS.home1[0]<POINTS.warehouse[0]&&POINTS.home1[1]>POINTS.warehouse[1]);
 assert(POINTS.assembly[0]>POINTS.warehouse[0]&&POINTS.assembly[1]>POINTS.warehouse[1]);
 console.log('PASS: photo-oriented floor layout, route endpoints, orthogonal aisles and workboard avoidance.');
+
+// The second robot stages as soon as the first reaches storage, before dispatch.
+for(let n=1;n<=20;n++){
+ const plan=makePlan(n);
+ const firstArrival=plan.events.find(e=>e.kind==='arrive'&&e.robot===0&&e.to==='warehouse');
+ const staging=plan.tasks.filter(t=>t.actor===1&&t.type==='move'&&t.from==='home'&&t.to==='waiting');
+ if(n===1){
+  assert.equal(staging.length,0);
+  assert(plan.tasks.every(t=>t.actor!==1),'One-item orders leave burger 2 at home');
+ }else{
+  assert.equal(staging.length,1);
+  assert.equal(staging[0].start,firstArrival.time);
+  assert(staging[0].start<plan.jobs[0].dispatch);
+  assert.equal(snapshot(plan,firstArrival.time-.001).robots[1].status,'초기위치 대기');
+  assert.equal(snapshot(plan,firstArrival.time).robots[1].status,'대기장소 이동');
+  assert.equal(snapshot(plan,staging[0].end).robots[1].status,'대기장소 대기');
+ }
+}
+for(const robot of [0,1]){
+ const route=path('warehouse','assembly',robot);
+ assert.equal(route.length,3,'Storage to assembly has one turn at the aisle junction');
+ const approach=route.at(-2),dock=route.at(-1);
+ assert.equal(approach[1],dock[1],'Final approach is horizontal');
+ assert(dock[0]>approach[0],'Dock by moving straight right toward the workboard');
+ assert.deepEqual(path('assembly','warehouse',robot),[...route].reverse());
+}
+console.log('PASS: staging trigger for orders 1–20, exact arrival boundary and straight assembly docking.');

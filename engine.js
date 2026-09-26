@@ -1,7 +1,7 @@
 /* Deterministic, seekable process simulation. Durations are illustrative seconds. */
 (function (root) {
   'use strict';
-  const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,700] };
+  const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,750] };
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
   function makePlan(quantity) {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new RangeError('주문 수량은 1~20 사이의 정수로 입력하세요.');
@@ -22,7 +22,7 @@
       let warehouseStart;
       if(i===0) warehouseStart=0;
       else {
-        if(i===1) tails[1]=move(1,'home','waiting',prior.dispatch,3,i);
+        if(i===1) tails[1]=move(1,'home','waiting',prior.loadStart,3,i);
         warehouseStart=Math.max(tails[robot],prior.assemblyStart);
       }
       const loadStart=move(robot,i===0?'home':'waiting','warehouse',warehouseStart,4,i);
@@ -70,7 +70,6 @@
     const branch=place=>{
       const p=point(place,robot);
       if(place==='home')return [p,[220,p[1]],[220,750],[340,750]];
-      if(place==='assembly')return [p,[400,750],[340,750]];
       return [p,[340,750]];
     };
     const points=[...branch(from),...branch(to).reverse()];
