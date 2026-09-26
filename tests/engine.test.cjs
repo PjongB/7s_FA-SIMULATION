@@ -51,7 +51,7 @@ for(let n=1;n<=20;n++){
   assert.equal(staging[0].start,firstArrival.time);
   assert(staging[0].start<plan.jobs[0].dispatch);
   assert.equal(snapshot(plan,firstArrival.time-.001).robots[1].status,'초기위치 대기');
-  assert.equal(snapshot(plan,firstArrival.time).robots[1].status,'대기장소 이동');
+  assert.equal(snapshot(plan,firstArrival.time).robots[1].status,'후진 출차 · 회전위치 이동');
   assert.equal(snapshot(plan,staging[0].end).robots[1].status,'대기장소 대기');
  }
 }
@@ -96,7 +96,7 @@ for(const n of [1,2,3,20]){
   assert.equal(motionPose(task,task.end).heading,DOCK_HEADINGS[task.to]);
  }
  const end=snapshot(plan,plan.duration);
- end.robots.forEach(r=>assert.equal(r.heading,n===1&&r.id===1?90:DOCK_HEADINGS.home));
+ end.robots.forEach(r=>assert.equal(r.heading,DOCK_HEADINGS.home));
  const mid=snapshot(plan,plan.duration/2);snapshot(plan,plan.duration);assert.deepEqual(snapshot(plan,plan.duration/2),mid);
 }
 console.log('PASS: stationary animated turns, aligned driving, continuous headings and deterministic seek.');
@@ -121,16 +121,28 @@ for(const n of [2,3,20]){
 }
 console.log('PASS: reverse parking into waiting bay, exit-facing stop and forward departure.');
 
+
 for(const n of [1,2,3,20]){
  const plan=makePlan(n);
- snapshot(plan,0).robots.forEach(r=>assert.equal(r.heading,90));
- snapshot(plan,plan.duration).robots.forEach(r=>assert.equal(r.heading,90));
- for(const task of plan.tasks.filter(t=>t.type==='move'&&t.to==='home')){
-  const last=task.motion.at(-1);
-  assert.equal(last.type,'turn');assert.equal(last.targetHeading,90);
-  assert.equal(Math.abs(last.delta),180);
-  assert.deepEqual(last.position,POINTS['home'+(task.actor+1)]);
-  assert(task.end<=plan.duration,'Order completion waits for final heading alignment');
+ snapshot(plan,0).robots.forEach(r=>assert.equal(r.heading,270));
+ snapshot(plan,plan.duration).robots.forEach(r=>assert.equal(r.heading,270));
+ for(const task of plan.tasks.filter(t=>t.type==='move')){
+  const phases=task.motion;
+  if(task.from==='home'||task.from==='warehouse'||task.from==='assembly'){
+   assert.equal(phases[0].type,'drive');assert(phases[0].reversing,'Back out before turning');
+   assert.equal(phases[0].heading,DOCK_HEADINGS[task.from]);
+  }
+  if(task.from==='home'&&task.to==='warehouse'||task.from==='warehouse'&&task.to==='assembly'){
+   assert.deepEqual(phases.map(p=>p.type),['drive','turn','drive']);
+   assert.equal(phases[1].delta,90,'Clockwise right turn');
+   assert.equal(phases[2].reversing,false);
+  }
+  if(task.from==='assembly'&&task.to==='home'){
+   assert.deepEqual(phases[0].to,[340,750]);
+   assert.equal(phases[1].type,'turn');assert.equal(Math.abs(phases[1].delta),180);
+   assert(phases.slice(2).filter(p=>p.type==='drive').every(p=>!p.reversing));
+   assert.equal(phases.at(-1).type,'drive');assert.equal(phases.at(-1).heading,270);
+  }
  }
 }
-console.log('PASS: initial and returned robots face right; return includes a stationary half-turn.');
+console.log('PASS: wall-facing homes, reverse exits, right turns to warehouse/assembly and junction half-turn before forward return.');
