@@ -11,9 +11,14 @@
     const event=(time,kind,data={})=>events.push({time,kind,...data,serial:serial++});
     function task(actor,type,start,end,data={}) { const x={id:tasks.length,actor,type,start,end,...data}; tasks.push(x); return x; }
     function move(robot,from,to,start,duration,job=null) {
-      const end=start+duration;
-      task(robot,'move',start,end,{from,to,job});
+      const motion=makeMotion(path(from,to,robot),from==='home'?90:DOCK_HEADINGS[from],duration,to==='waiting');
+      const end=start+motion.at(-1).end;
+      task(robot,'move',start,end,{from,to,job,motion});
       event(start,'move_start',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]}로 이동`,photo:to==='warehouse'?'warehouse':to==='home'?'home':'route'});
+      for(const phase of motion){
+        if(phase.type==='turn')event(start+phase.start,'turn_start',{robot,from,to,job,text:`버거 ${robot+1} · 정지 후 ${Math.abs(phase.delta)}° 제자리 회전`,photo:'route'});
+        else event(start+phase.start,phase.reversing?'reverse_start':'drive_start',{robot,from,to,job,text:`버거 ${robot+1} · ${phase.reversing?'대기장소 후진 주차':'전방 정렬 완료 · 직선 주행'}`,photo:phase.reversing?'waiting':'route'});
+      }
       event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} ${to==='waiting'?'후진 주차 완료':'도착'}`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
       return end;
     }
@@ -91,6 +96,36 @@
     return {position:points.at(-1),heading:0};
   }
   function position(points,progress) {return pose(points,progress).position;}
+  function makeMotion(points,initialHeading,driveDuration,reverseLast=false){
+    const lengths=points.slice(1).map((p,i)=>Math.hypot(p[0]-points[i][0],p[1]-points[i][1]));
+    const total=lengths.reduce((a,b)=>a+b,0),motion=[];
+    let cursor=0,heading=initialHeading;
+    for(let i=0;i<lengths.length;i++){
+      if(!lengths[i])continue;
+      const a=points[i],b=points[i+1],reversing=reverseLast&&i===lengths.length-1;
+      const next=(Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI+450+(reversing?180:0))%360;
+      const delta=(next-heading+540)%360-180;
+      if(Math.abs(delta)>1e-8){
+        const end=cursor+Math.abs(delta)/90; // Illustrative: one second per quarter turn.
+        motion.push({type:'turn',start:cursor,end,position:a,heading,delta,targetHeading:next});
+        cursor=end;
+      }
+      const end=cursor+driveDuration*lengths[i]/total;
+      motion.push({type:'drive',start:cursor,end,from:a,to:b,heading:next,reversing});
+      cursor=end;heading=next;
+    }
+    return motion;
+  }
+  function motionPose(task,time){
+    const elapsed=Math.max(0,Math.min(task.end-task.start,time-task.start));
+    const phase=task.motion.find(p=>elapsed<p.end)||task.motion.at(-1);
+    const f=Math.max(0,Math.min(1,(elapsed-phase.start)/(phase.end-phase.start)));
+    if(phase.type==='turn'){
+      const eased=f*f*(3-2*f);
+      return {position:[...phase.position],heading:(phase.heading+phase.delta*eased+360)%360,reversing:false,turning:true};
+    }
+    return {position:phase.from.map((v,i)=>v+(phase.to[i]-v)*f),heading:phase.heading,reversing:phase.reversing,turning:false};
+  }
   function snapshot(plan,time) {
     time=Math.max(0,Math.min(plan.duration,time));
     const robots=[0,1].map(i=>({id:i,place:'home',status:'초기위치 대기',parts:0,job:null,heading:90,position:point('home',i)}));
@@ -118,8 +153,9 @@
       const f=(time-t.start)/(t.end-t.start);
       if(t.type==='move'){
         const r=robots[t.actor];
-        Object.assign(r,pose(path(t.from,t.to,t.actor),f,t.to==='waiting'));
-        if(r.reversing)r.status='대기장소 후진 주차 중';
+        Object.assign(r,motionPose(t,time));
+        if(r.turning)r.status='정지 · 제자리 회전 중';
+        else if(r.reversing)r.status='대기장소 후진 주차 중';
       }
       if(t.type==='prepare')state.linear=f;
       if(t.type==='reset')state.linear=1-f;
@@ -127,6 +163,6 @@
     state.focus=[...state.active].sort((a,b)=>({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[b.type]||0)-({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[a.type]||0))[0];
     return state;
   }
-  const api={makePlan,snapshot,path,position,pose,POINTS,DOCK_HEADINGS};
+  const api={makePlan,snapshot,path,position,pose,makeMotion,motionPose,POINTS,DOCK_HEADINGS};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.RobotSimulation=api;
 })(typeof window!=='undefined'?window:globalThis);

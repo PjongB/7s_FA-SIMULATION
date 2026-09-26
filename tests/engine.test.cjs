@@ -64,32 +64,42 @@ for(const robot of [0,1]){
  assert.deepEqual(path('assembly','warehouse',robot),[...route].reverse());
 }
 console.log('PASS: staging trigger for orders 1–20, exact arrival boundary and straight assembly docking.');
-// Body heading follows the actual velocity on every straight route segment.
-const {pose,DOCK_HEADINGS}=require('../engine.js');
+// Turning occupies time at a fixed point; driving never slides sideways.
+const {pose,DOCK_HEADINGS,motionPose}=require('../engine.js');
+const angularDistance=(a,b)=>Math.abs((a-b+540)%360-180);
 for(const n of [1,2,3,20]){
  const plan=makePlan(n);
  for(const task of plan.tasks.filter(t=>t.type==='move')){
-  const route=path(task.from,task.to,task.actor);
-  const lengths=route.slice(1).map((p,i)=>Math.hypot(p[0]-route[i][0],p[1]-route[i][1]));
-  const total=lengths.reduce((a,b)=>a+b,0);let covered=0;
-  for(let i=0;i<lengths.length;i++){
-   const fraction=(covered+lengths[i]/2)/total;
-   const state=snapshot(plan,task.start+fraction*(task.end-task.start)).robots[task.actor];
-   const radians=state.heading*Math.PI/180;
-   const dx=route[i+1][0]-route[i][0],dy=route[i+1][1]-route[i][1];
-   const direction=task.to==='waiting'&&i===lengths.length-1?-1:1;
-   assert(Math.abs(Math.sin(radians)-direction*dx/lengths[i])<1e-8,'Front must follow horizontal velocity');
-   assert(Math.abs(-Math.cos(radians)-direction*dy/lengths[i])<1e-8,'Front must follow vertical velocity');
-   covered+=lengths[i];
+  for(const phase of task.motion){
+   const at=f=>snapshot(plan,task.start+phase.start+(phase.end-phase.start)*f).robots[task.actor];
+   if(phase.type==='turn'){
+    const a=at(.1),b=at(.5),c=at(.9);
+    assert.deepEqual(a.position,c.position,'No translation while turning');
+    assert(a.turning&&b.turning&&c.turning);
+    assert(angularDistance(a.heading,c.heading)>1,'Rotation must animate over time');
+    assert(angularDistance(b.heading,(phase.heading+phase.delta/2+360)%360)<1e-8);
+   }else{
+    const state=at(.5),radians=state.heading*Math.PI/180;
+    const dx=phase.to[0]-phase.from[0],dy=phase.to[1]-phase.from[1],distance=Math.hypot(dx,dy);
+    const direction=phase.reversing?-1:1;
+    assert(!state.turning);
+    assert(Math.abs(Math.sin(radians)-direction*dx/distance)<1e-8);
+    assert(Math.abs(-Math.cos(radians)-direction*dy/distance)<1e-8);
+   }
   }
-  assert.equal(pose(route,1,task.to==='waiting').heading,DOCK_HEADINGS[task.to],'Arrive facing target marker and IR line');
+  for(let i=1;i<task.motion.length;i++){
+   const boundary=task.start+task.motion[i].start;
+   const a=motionPose(task,boundary-.00001),b=motionPose(task,boundary+.00001);
+   assert(Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1])<.1,'Continuous position');
+   assert(angularDistance(a.heading,b.heading)<.01,'Continuous heading at phase boundary');
+  }
+  assert.equal(motionPose(task,task.end).heading,DOCK_HEADINGS[task.to]);
  }
  const end=snapshot(plan,plan.duration);
  end.robots.forEach(r=>assert.equal(r.heading,n===1&&r.id===1?90:DOCK_HEADINGS.home));
  const mid=snapshot(plan,plan.duration/2);snapshot(plan,plan.duration);assert.deepEqual(snapshot(plan,plan.duration/2),mid);
 }
-console.log('PASS: forward-facing travel on every segment, aligned docking headings and deterministic seek.');
-
+console.log('PASS: stationary animated turns, aligned driving, continuous headings and deterministic seek.');
 for(const n of [2,3,20]){
  const plan=makePlan(n);
  for(const task of plan.tasks.filter(t=>t.type==='move'&&t.to==='waiting')){
