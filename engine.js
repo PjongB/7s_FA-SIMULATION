@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,750] };
-  const DOCK_HEADINGS = {home:270,waiting:180,warehouse:0,assembly:90};
+  const DOCK_HEADINGS = {home:270,waiting:0,warehouse:0,assembly:90};
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
   function makePlan(quantity) {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new RangeError('주문 수량은 1~20 사이의 정수로 입력하세요.');
@@ -14,7 +14,7 @@
       const end=start+duration;
       task(robot,'move',start,end,{from,to,job});
       event(start,'move_start',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]}로 이동`,photo:to==='warehouse'?'warehouse':to==='home'?'home':'route'});
-      event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} 도착`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
+      event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} ${to==='waiting'?'후진 주차 완료':'도착'}`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
       return end;
     }
     event(0,'order',{quantity,text:`Host 주문 접수 · A제품 ${quantity}개 / 두 카운트 ${quantity}로 설정`,photo:'route'});
@@ -76,14 +76,15 @@
     const points=[...branch(from),...branch(to).reverse()];
     return points.filter((p,i)=>!i||p[0]!==points[i-1][0]||p[1]!==points[i-1][1]);
   }
-  function pose(points,progress) {
+  function pose(points,progress,reverseLast=false) {
     const lengths=points.slice(1).map((p,i)=>Math.hypot(p[0]-points[i][0],p[1]-points[i][1]));
     let distance=lengths.reduce((a,b)=>a+b,0)*Math.max(0,Math.min(1,progress));
     for(let i=0;i<lengths.length;i++) {
       if(distance<=lengths[i]||i===lengths.length-1) {
         const f=lengths[i]?distance/lengths[i]:0;
         const dx=points[i+1][0]-points[i][0],dy=points[i+1][1]-points[i][1];
-        return {position:[points[i][0]+dx*f,points[i][1]+dy*f],heading:(Math.atan2(dy,dx)*180/Math.PI+450)%360};
+        const reversing=reverseLast&&i===lengths.length-1;
+        return {position:[points[i][0]+dx*f,points[i][1]+dy*f],heading:(Math.atan2(dy,dx)*180/Math.PI+450+(reversing?180:0))%360,reversing};
       }
       distance-=lengths[i];
     }
@@ -115,7 +116,11 @@
     state.active=plan.tasks.filter(x=>x.start<=time&&time<x.end);
     for(const t of state.active) {
       const f=(time-t.start)/(t.end-t.start);
-      if(t.type==='move')Object.assign(robots[t.actor],pose(path(t.from,t.to,t.actor),f));
+      if(t.type==='move'){
+        const r=robots[t.actor];
+        Object.assign(r,pose(path(t.from,t.to,t.actor),f,t.to==='waiting'));
+        if(r.reversing)r.status='대기장소 후진 주차 중';
+      }
       if(t.type==='prepare')state.linear=f;
       if(t.type==='reset')state.linear=1-f;
     }

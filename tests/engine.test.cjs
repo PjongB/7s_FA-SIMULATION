@@ -77,14 +77,36 @@ for(const n of [1,2,3,20]){
    const state=snapshot(plan,task.start+fraction*(task.end-task.start)).robots[task.actor];
    const radians=state.heading*Math.PI/180;
    const dx=route[i+1][0]-route[i][0],dy=route[i+1][1]-route[i][1];
-   assert(Math.abs(Math.sin(radians)-dx/lengths[i])<1e-8,'Front must follow horizontal velocity');
-   assert(Math.abs(-Math.cos(radians)-dy/lengths[i])<1e-8,'Front must follow vertical velocity');
+   const direction=task.to==='waiting'&&i===lengths.length-1?-1:1;
+   assert(Math.abs(Math.sin(radians)-direction*dx/lengths[i])<1e-8,'Front must follow horizontal velocity');
+   assert(Math.abs(-Math.cos(radians)-direction*dy/lengths[i])<1e-8,'Front must follow vertical velocity');
    covered+=lengths[i];
   }
-  assert.equal(pose(route,1).heading,DOCK_HEADINGS[task.to],'Arrive facing target marker and IR line');
+  assert.equal(pose(route,1,task.to==='waiting').heading,DOCK_HEADINGS[task.to],'Arrive facing target marker and IR line');
  }
  const end=snapshot(plan,plan.duration);
  end.robots.forEach(r=>assert.equal(r.heading,n===1&&r.id===1?90:DOCK_HEADINGS.home));
  const mid=snapshot(plan,plan.duration/2);snapshot(plan,plan.duration);assert.deepEqual(snapshot(plan,plan.duration/2),mid);
 }
 console.log('PASS: forward-facing travel on every segment, aligned docking headings and deterministic seek.');
+
+for(const n of [2,3,20]){
+ const plan=makePlan(n);
+ for(const task of plan.tasks.filter(t=>t.type==='move'&&t.to==='waiting')){
+  const before=snapshot(plan,task.end-.01).robots[task.actor];
+  assert.equal(before.heading,0,'Face exit while backing into waiting bay');
+  assert.equal(before.reversing,true);
+  assert.equal(before.status,'대기장소 후진 주차 중');
+  assert(before.position[1]<POINTS.waiting[1]);
+  const parked=snapshot(plan,task.end).robots[task.actor];
+  assert.equal(parked.heading,0);
+  assert.deepEqual(parked.position,POINTS.waiting);
+ }
+ for(const task of plan.tasks.filter(t=>t.type==='move'&&t.from==='waiting')){
+  const leaving=snapshot(plan,task.start+.01).robots[task.actor];
+  assert.equal(leaving.heading,0);
+  assert.equal(leaving.reversing,false);
+  assert(leaving.position[1]<POINTS.waiting[1],'Leave bay forwards toward exit');
+ }
+}
+console.log('PASS: reverse parking into waiting bay, exit-facing stop and forward departure.');

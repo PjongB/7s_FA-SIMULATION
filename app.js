@@ -9,7 +9,7 @@ const photos={
  assembly:{title:'로봇팔 2 · 티칭 조립',detail:'버거가 도착하고 A지그 위치가 준비되면 티칭 동작으로 제품을 조립합니다.'},
  process:{title:'제작공정 · 리니어 모터',detail:'조립 전에는 A지그 위치로, 조립 후에는 초기위치로 이동합니다.'},
  pallet:{title:'로봇팔 3 · 완제품 적재',detail:'완제품을 파렛트로 옮긴 뒤 성공을 확인하면 Host의 완제품 잔여 카운트가 줄어듭니다.'},
- waiting:{title:'버거 대기장소',detail:'다음 버거가 공정에 진입하기 전, 작업을 마친 버거가 이곳으로 이동합니다.'},
+ waiting:{title:'버거 대기장소',detail:'교차 통로에서 출구를 바라보도록 정렬한 뒤 후진 주차합니다. 대기 후에는 전진으로 출차합니다.'},
  home:{title:'버거 초기위치',detail:'버거 1과 2의 시작·복귀 위치입니다. 중간 대기장소와 별도로 관리합니다.'}
 };
 let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
@@ -22,10 +22,10 @@ Object.entries(RobotSimulation.POINTS).forEach(([place,point])=>{
  cue.setAttribute('class','dock-cue');
  cue.setAttribute('transform',`translate(${point.join(' ')}) rotate(${RobotSimulation.DOCK_HEADINGS[kind]})`);
  const title=document.createElementNS(svgNS,'title');
- title.textContent=`${place}: ArUco 위치 표식과 적외선 센서용 검은 정지선 (개념 표시)`;
+ title.textContent=`${place}: ArUco 위치 표식과 후방 적외선 센서용 검은 정지선 (개념 표시)`;
  cue.append(title);
  const line=document.createElementNS(svgNS,'path');
- line.setAttribute('d','M-29 -21 H29');line.setAttribute('stroke','#111');line.setAttribute('stroke-width','6');
+ line.setAttribute('d','M-29 21 H29');line.setAttribute('stroke','#111');line.setAttribute('stroke-width','6');
  cue.append(line);
  const marker=document.createElementNS(svgNS,'g');marker.setAttribute('transform',`translate(0 -55) rotate(${-RobotSimulation.DOCK_HEADINGS[kind]})`);
  marker.innerHTML='<rect x="-14" y="-14" width="28" height="28" fill="white" stroke="#111" stroke-width="3"/><text y="5" text-anchor="middle" font-size="13" font-weight="800" fill="#111">AR</text>';
@@ -66,7 +66,7 @@ function getScene(s){
  if(f.type==='prepare'||f.type==='reset')return {key:'process',kicker:'LINEAR MOTOR',title:f.type==='prepare'?'A지그 위치 준비':'리니어 모터 복귀',detail:f.type==='prepare'?'다음 조립에 사용할 A지그를 작업 위치로 이동합니다.':'조립이 끝나 리니어 모터를 초기위치로 되돌립니다.'};
  if(f.type==='gate')return {key:'waiting',kicker:'INTERLOCK WAIT',title:'제작공정 진입 대기',detail:'부품 적재 완료. 앞 제품의 파렛트 적재와 앞 버거의 대기장소 도착을 기다립니다.'};
  const names={home:'초기위치 복귀',waiting:'대기장소 이동',warehouse:'자재창고 이동',assembly:'제작공정 이동'};
- return {key:f.to==='home'?'home':f.to==='waiting'?'waiting':f.to==='warehouse'?'warehouse':'route',kicker:`BURGER ${f.actor+1} · MOVING`,title:`버거 ${f.actor+1} · ${names[f.to]}`,detail:f.to==='assembly'?'Host가 운송 시작을 확인해 운송 잔여를 1 감소시켰습니다. 조립 위치로 이동 중입니다.':f.to==='home'?'추가 운송 배정이 없어 초기위치로 복귀합니다. 진행 중인 제품의 조립·적재는 계속됩니다.':f.to==='waiting'?'다른 버거와 제작공정을 교대하기 위해 대기장소로 이동합니다.':'자재창고에 도착하면 로봇팔 1이 A제품 부품 3개를 적재합니다.'};
+ return {key:f.to==='home'?'home':f.to==='waiting'?'waiting':f.to==='warehouse'?'warehouse':'route',kicker:`BURGER ${f.actor+1} · MOVING`,title:`버거 ${f.actor+1} · ${names[f.to]}`,detail:f.to==='assembly'?'Host가 운송 시작을 확인해 운송 잔여를 1 감소시켰습니다. 조립 위치로 이동 중입니다.':f.to==='home'?'추가 운송 배정이 없어 초기위치로 복귀합니다. 진행 중인 제품의 조립·적재는 계속됩니다.':f.to==='waiting'?'교차 통로까지 이동한 뒤 출구를 바라보도록 정렬하고, 대기장소에 후진 주차합니다.':'자재창고에 도착하면 로봇팔 1이 A제품 부품 3개를 적재합니다.'};
 }
 function render(){
  const s=plan?RobotSimulation.snapshot(plan,time):{...RobotSimulation.snapshot(idlePlan,0),events:[],active:[],robots:[0,1].map(id=>({id,position:RobotSimulation.POINTS['home'+(id+1)],parts:0,heading:90,status:'초기위치 대기'})),linear:0,arms:['대기','대기','대기'],done:false};
