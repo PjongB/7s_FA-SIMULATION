@@ -51,6 +51,17 @@
   queue=op.catch(()=>{});return op;
  }
  bridge.start=quantity=>call('start',{quantity});
+ let stepBusy=false;
+ bridge.step=async quantity=>{
+  if(stepBusy||!bridge.online||!['idle','done','waiting'].includes(bridge.state?.status))return;
+  stepBusy=true;
+  try{
+   const s=await call('auto',{enabled:false});
+   if(!s)return;
+   if(['idle','done'].includes(s.status))return await call('start',{quantity});
+   if(s.status==='waiting')return await call('next');
+  }finally{stepBusy=false;}
+ };
  bridge.complete=()=>{
   const s=bridge.state;
   if(bridge.ackBusy||!bridge.online||s?.status!=='running'||!s.command)return;

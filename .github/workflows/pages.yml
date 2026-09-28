@@ -28,6 +28,7 @@ jobs:
           node tests/engine.test.cjs
           node tests/host-client.test.cjs
           node tests/host-stages.test.cjs
+          node tests/step-ui.test.cjs
           python3 -m unittest discover -s tests -p "test_host.py"
           python3 host/package.py
       - name: Prepare static website

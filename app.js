@@ -13,6 +13,7 @@ const photos={
  home:{title:'버거 초기위치',detail:'두 버거는 왼쪽 벽의 마커를 바라보고 주차합니다. 후진으로 출차하고, 복귀 시에는 전진 진입 후 후방 센서가 감지선에 닿는 위치에서 멈춥니다.'}
 };
 let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
+let manualMode=false,manualTarget=null,stages=[],stepBusy=false;
 const idlePlan=RobotSimulation.makePlan(2);
 // Dock cues are schematic placeholders; no physical marker IDs are assigned here.
 const svgNS='http://www.w3.org/2000/svg';
@@ -39,16 +40,30 @@ function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${Str
 function validateQuantity(){const n=Number($('quantity').value);if(!Number.isInteger(n)||n<1||n>20)throw Error('주문 수량을 1~20 사이의 정수로 입력해 주세요.');return n;}
 function setPhoto(key){if(currentPhoto!==key||!$('scene-image').getAttribute('src')){$('scene-image').src=photoPath(key);currentPhoto=key;}$('scene-image').alt=photos[key].title;}
 function openPhoto(key){$('dialog-image').src=photoPath(key);$('dialog-image').alt=photos[key].title;$('dialog-title').textContent=photos[key].title;$('dialog-description').textContent=photos[key].detail;$('photo-dialog').showModal();}
-function begin(run=true){if(HostBridge.enabled){try{HostBridge.start(validateQuantity());}catch(e){$('form-error').textContent=e.message;}return;}try{plan=RobotSimulation.makePlan(validateQuantity());time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
-function reset(){if(HostBridge.enabled)return;plan=null;time=0;playing=false;following=true;lastEventKey='';setPhoto('full-map');render();}
-function step(direction){if(HostBridge.enabled)return;if(!plan){begin(false);return;}playing=false;const times=[...new Set(plan.events.map(e=>e.time))];time=direction>0?(times.find(t=>t>time+0.001)??plan.duration):([...times].reverse().find(t=>t<time-0.001)??0);render();}
-function togglePlay(){if(HostBridge.enabled)return;if(!plan){begin();return;}if(time>=plan.duration){time=0;lastEventKey='';}playing=!playing;render();}
+function begin(run=true){manualMode=false;manualTarget=null;if(HostBridge.enabled){try{HostBridge.start(validateQuantity());}catch(e){$('form-error').textContent=e.message;}return;}try{plan=RobotSimulation.makePlan(validateQuantity());stages=RobotSimulation.stagesFor(plan.quantity);time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
+function reset(){if(HostBridge.enabled)return;plan=null;manualMode=false;manualTarget=null;stages=[];time=0;playing=false;following=true;lastEventKey='';setPhoto('full-map');render();}
+function step(direction){if(HostBridge.enabled)return;manualMode=false;manualTarget=null;if(!plan){begin(false);return;}playing=false;const times=[...new Set(plan.events.map(e=>e.time))];time=direction>0?(times.find(t=>t>time+0.001)??plan.duration):([...times].reverse().find(t=>t<time-0.001)??0);render();}
+function togglePlay(){if(HostBridge.enabled)return;if(manualMode){if(playing){playing=false;render();}else runStage();return;}if(!plan){begin();return;}if(time>=plan.duration){time=0;lastEventKey='';}playing=!playing;render();}
+async function runStage(){
+ if(stepBusy||playing)return;
+ if(HostBridge.enabled){
+  stepBusy=true;render();
+  try{await HostBridge.step(validateQuantity());}catch(e){$('form-error').textContent=e.message;}
+  finally{stepBusy=false;render();}return;
+ }
+ if(!plan||time>=plan.duration){try{validateQuantity();}catch(e){$('form-error').textContent=e.message;return;}begin(false);}
+ if(!plan)return;
+ manualMode=true;
+ manualTarget=stages.find(s=>s.time>time+1e-7)?.time??plan.duration;
+ playing=true;render();
+}
+$('step-order').onclick=runStage;
 $('order-form').addEventListener('submit',e=>{e.preventDefault();begin();});
 $('plus').onclick=()=>$('quantity').value=Math.min(20,Math.max(1,Number($('quantity').value)||1)+1);
 $('minus').onclick=()=>$('quantity').value=Math.max(1,(Number($('quantity').value)||1)-1);
 $('play').onclick=togglePlay;$('reset').onclick=reset;$('next').onclick=()=>step(1);$('previous').onclick=()=>step(-1);
 $('speed').onchange=e=>speed=Number(e.target.value);
-$('timeline').oninput=e=>{if(!plan||HostBridge.enabled)return;playing=false;time=Number(e.target.value);render();};
+$('timeline').oninput=e=>{if(!plan||HostBridge.enabled)return;playing=false;manualMode=false;manualTarget=null;time=Number(e.target.value);render();};
 $('follow').onclick=()=>{following=!following;render();};
 $('photo-open').onclick=()=>openPhoto(currentPhoto);
 $('close-dialog').onclick=()=>$('photo-dialog').close();
@@ -98,18 +113,43 @@ function renderCurrentStage(s){
    detail=!HostBridge.online?'호스트 연결을 확인하세요. 연결 복구 후 재개 지시가 필요합니다.':'호스트에서 재개하면 현재 위치부터 이어서 실행합니다.';
   }else if(hs?.status==='running'&&!playing){status='완료 회신 확인 중';}
  }
- const number=HostBridge.enabled?(hs?.quantity?`호스트 단계 ${hs.command?.seq??hs.acked_seq} / ${hs.stage_count??'—'}`:'호스트 통신 모드'):'자동 시뮬레이션';
+ if(manualMode&&!playing&&plan&&!s.done&&time>=manualTarget){status='단계 완료 · 다음 실행 대기';title='다음 단계 실행 대기';detail='왼쪽 완료 조건을 확인한 뒤 단계별 실행 버튼을 누르세요.';label='단계 실행 대기';items=['다음 지시를 기다립니다.'];}
+ const number=HostBridge.enabled?(hs?.quantity?`호스트 단계 ${hs.command?.seq??hs.acked_seq} / ${hs.stage_count??'—'}`:'호스트 통신 모드'):manualMode?'단계별 시뮬레이션':'자동 시뮬레이션';
  if(!items.length){label='장비 상태';items=[s.done?'버거 1·2 복귀 및 파렛트 적재 완료':!plan?'버거 1·2 초기위치 대기':'다음 작업 준비'];}
  set('stage-status',status);set('stage-number',number);set('stage-title',title);set('stage-detail',detail);set('stage-work-label',label);
  const list=$('stage-work-list'),key=JSON.stringify(items);
  if(list.dataset.items!==key){list.replaceChildren(...items.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));list.dataset.items=key;}
 }
+function renderConditions(){
+ const hs=HostBridge.enabled?HostBridge.state:null;
+ const stage=plan?(HostBridge.enabled?stages[(hs?.command?.seq??hs?.acked_seq??1)-1]:manualMode&&manualTarget!=null?stages.find(s=>s.time===manualTarget):stages.find(s=>s.time>time+1e-7)??stages.at(-1)):null;
+ const items=stage?RobotSimulation.stageConditions(plan,stage,time):[{label:'주문 시작 및 실행 지시',signal:'start',done:false}];
+ if(HostBridge.enabled){
+  items.push({label:'Host 연결',signal:'heartbeat',done:HostBridge.online});
+  items.push({label:'Host 완료 회신 수신',signal:stage?`ACK · order_id / seq ${stage.seq}`:'ACK',done:!!stage&&(hs?.acked_seq??0)>=stage.seq});
+ }
+ $('conditions-title').textContent=stage?`${stage.seq}단계 → 다음 상태 조건`:'다음 단계 전환 조건';
+ $('conditions-note').textContent=HostBridge.enabled?'작업 완료는 웹 모의 신호입니다. ACK는 Host 응답으로 확인합니다. 실제 로봇·IR 센서 신호는 아직 연결되지 않았습니다.':'빨강: 미완료 · 초록: 완료. 웹 모의 신호이며 단계별 실행은 모든 조건 완료 후 다음 버튼을 기다립니다.';
+ const list=$('conditions-list'),key=JSON.stringify(items);
+ if(list.dataset.items!==key){
+  list.replaceChildren(...items.map(item=>{
+   const li=document.createElement('li');li.className=item.done?'condition-done':'';
+   const dot=document.createElement('i');dot.className='condition-dot';dot.setAttribute('aria-hidden','true');
+   const label=document.createElement('span');label.textContent=item.label;
+   const small=document.createElement('small');small.textContent=`${item.done?'완료':'미완료'} · ${item.signal}`;
+   label.append(small);li.append(dot,label);return li;
+  }));list.dataset.items=key;
+ }
+ const ready=HostBridge.enabled?HostBridge.online&&['idle','done','waiting'].includes(hs?.status):!playing;
+ $('step-order').disabled=stepBusy||!ready;
+ $('step-order').textContent=plan&&!RobotSimulation.snapshot(plan,time).done?'다음 단계 실행':'단계별 실행';
+}
 function render(){
  const s=plan?RobotSimulation.snapshot(plan,time):{...RobotSimulation.snapshot(idlePlan,0),events:[],active:[],robots:[0,1].map(id=>({id,position:RobotSimulation.POINTS['home'+(id+1)],parts:0,heading:RobotSimulation.DOCK_HEADINGS.home,status:'초기위치 대기'})),linear:0,arms:['대기','대기','대기'],done:false};
- renderCurrentStage(s);
+ renderCurrentStage(s);renderConditions();
  $('total').textContent=plan?plan.quantity:'—';$('transport').textContent=plan?s.transport:'—';$('remaining').textContent=plan?s.remaining:'—';$('completed').textContent=plan?s.completed:0;
  const percent=plan?Math.round(s.completed/plan.quantity*100):0;$('completion-percent').textContent=percent+'%';$('completion-bar').style.width=percent+'%';$('pallet-count').textContent=(plan?s.completed:0)+'개 적재';
- $('run-status').textContent=!plan?'주문 대기':s.done?'주문 완료':playing?'시뮬레이션 진행 중':'일시정지';
+ $('run-status').textContent=!plan?'주문 대기':s.done?'주문 완료':playing?'시뮬레이션 진행 중':manualMode&&time>=manualTarget?'다음 단계 실행 대기':'일시정지';
  $('order-id').textContent=plan?`A제품 ${plan.quantity}개 · ${formatTime(time)} / ${formatTime(plan.duration)}`:'수량을 정하고 시작하세요';
  document.querySelector('.order-status').className='order-status'+(playing?' running':s.done?' complete':'');
  ['quantity','plus','minus','product'].forEach(id=>$(id).disabled=!!plan&&!s.done);$('start').disabled=!!plan&&!s.done;$('start').innerHTML=s.done?'<span>↻</span> 새 주문 · 시작':'<span>▶</span> 주문 · 시작';
@@ -144,7 +184,7 @@ function applyHostState(state){
  if(!state){render();return;}
  if(!state.quantity){plan=null;time=0;lastEventKey='';}
  else{
-  if(!plan||plan.hostOrder!==state.order_id){plan=RobotSimulation.makePlan(state.quantity);plan.hostOrder=state.order_id;time=state.time;following=true;lastEventKey='';}
+  if(!plan||plan.hostOrder!==state.order_id){plan=RobotSimulation.makePlan(state.quantity);stages=RobotSimulation.stagesFor(state.quantity);manualMode=false;manualTarget=null;plan.hostOrder=state.order_id;time=state.time;following=true;lastEventKey='';}
   time=Math.max(time,state.time);
   playing=HostBridge.online&&state.status==='running';
  }
@@ -152,7 +192,7 @@ function applyHostState(state){
 }
 function frame(now){
  if(lastFrame&&playing&&plan){
-  const limit=HostBridge.enabled?(HostBridge.state?.command?.target_time??time):plan.duration;
+  const limit=HostBridge.enabled?(HostBridge.state?.command?.target_time??time):manualMode?(manualTarget??time):plan.duration;
   time=Math.min(limit,time+Math.min((now-lastFrame)/1000,.2)*speed);
   if(time>=limit){playing=false;if(HostBridge.enabled)HostBridge.complete();}
   render();

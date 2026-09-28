@@ -180,6 +180,35 @@
     state.focus=[...state.active].sort((a,b)=>({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[b.type]||0)-({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[a.type]||0))[0];
     return state;
   }
-  const api={makePlan,snapshot,path,position,pose,makeMotion,motionPose,POINTS,DOCK_HEADINGS};
+function stagesFor(quantity){
+ const p=makePlan(quantity);
+ const completed=e=>['arrive','assembly_end','jig_ready','jig_home','pallet_end','complete'].includes(e.kind)||(e.kind==='part'&&e.part===3);
+ // A global ACK barrier must never freeze another robot halfway through its trip.
+ // Keep turns/drives inside each move; pause only when every moving robot has
+ // reached a destination (a new trip at this exact boundary has not moved yet).
+ const times=[...new Set(p.events.filter(completed).map(e=>e.time))]
+  .filter(time=>!p.tasks.some(t=>t.type==='move'&&t.start<time-1e-7&&time<t.end-1e-7))
+  .sort((a,b)=>a-b);
+ return times.map((time,index)=>{
+  const previous=index?times[index-1]:-1;
+  const s=snapshot(p,time);
+  return {seq:index+1,time,events:p.events.filter(e=>e.time>previous&&e.time<=time),
+   transport:s.transport,remaining:s.remaining,completed:s.completed,done:s.done};
+ });
+}
+
+  function stageConditions(plan, stage, time){
+    if(!stage)return [];
+    const completed=e=>['arrive','assembly_end','jig_ready','jig_home','pallet_end','complete'].includes(e.kind)||(e.kind==='part'&&e.part===3);
+    const conditions=stage.events.filter(completed).map(e=>({label:e.text,signal:e.kind==='part'?'part × 3':e.kind,done:time+1e-7>=e.time}));
+    for(const e of stage.events.filter(e=>e.kind==='dispatch')){
+      const job=plan.jobs[e.job],prev=plan.jobs[e.job-1];
+      const gates=[['부품 3개 적재',job.loaded,'part × 3'],...(prev?[
+        ['앞 제품 파렛트 적재',prev.palletEnd,'pallet_end'],['앞 버거 대기장소 도착',prev.waitEnd,'arrive · waiting']]:[])];
+      for(const [label,at,signal] of gates)conditions.push({label:`제품 #${job.id+1} 출발 조건 · ${label}`,signal,done:time+1e-7>=at});
+    }
+    return conditions;
+  }
+  const api={stagesFor,stageConditions,makePlan,snapshot,path,position,pose,makeMotion,motionPose,POINTS,DOCK_HEADINGS};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.RobotSimulation=api;
 })(typeof window!=='undefined'?window:globalThis);

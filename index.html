@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260926-stage-panel"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17242d"><title>Robot3 · 공정 시뮬레이션</title><link rel="stylesheet" href="styles.css?v=20260928-step-conditions"></head>
 <body>
 <header class="topbar"><a class="brand" href="./" aria-label="Robot3 홈"><span class="brand-icon">R<span>3</span></span><strong>ROBOT3<span>FACTORY LAB</span></strong></a><nav aria-label="페이지"><button class="nav active" data-tab="simulation">공정 시뮬레이션</button><button class="nav" data-tab="gallery">현장 사진 <span>09</span></button></nav><span class="demo-badge"><i></i> 시나리오 데모</span></header>
 <main>
@@ -13,6 +13,7 @@
 <p class="eyebrow">CURRENT STEP</p><h3>현재 단계</h3>
 <div class="stage-live" aria-live="polite" aria-atomic="true"><span id="stage-status" class="stage-status">주문 대기</span><p id="stage-number" class="stage-number">자동 시뮬레이션</p><h4 id="stage-title">주문을 기다리고 있어요</h4><p id="stage-detail">수량을 입력하고 주문을 시작하세요.</p></div>
 <div class="stage-work"><strong id="stage-work-label">장비 상태</strong><ul id="stage-work-list"><li>버거 1·2 초기위치 대기</li></ul></div>
+<section class="stage-conditions"><strong id="conditions-title">다음 단계 전환 조건</strong><ul id="conditions-list" aria-live="polite"></ul><p id="conditions-note"></p></section>
 <p class="stage-hint">주행 · 회전 · 조립 상태를 실시간으로 표시합니다.</p>
 </aside>
 <div class="map-wrapper"><svg id="factory-map" viewBox="0 0 680 1060" role="img" aria-labelledby="map-title map-desc"><title id="map-title">Robot3 공정 이동 시뮬레이션</title><desc id="map-desc">사용자가 지정한 방향으로 왼쪽 아래 초기위치, 중앙 위 자재창고, 오른쪽 아래 제작공정을 배치했습니다. 중앙 통로와 아래쪽 대기장소가 연결됩니다. 치수와 이동 시간은 설명용입니다.</desc><defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".75" fill="#d4dde2"/></pattern><filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".12"/></filter><g id="robot-shape"><rect x="-23" y="-16" width="7" height="30" rx="3" fill="#273a47"/><rect x="16" y="-16" width="7" height="30" rx="3" fill="#273a47"/><rect x="-18" y="-22" width="36" height="42" rx="9" fill="white" stroke="currentColor" stroke-width="3"/><rect x="-12" y="-15" width="24" height="23" rx="3" fill="currentColor" opacity=".12"/><circle cy="-8" r="6" fill="#273a47"/><path d="M-9 -27 L0 -43 L9 -27" fill="currentColor"/></g><g id="arm-shape"><rect x="-17" y="-8" width="34" height="16" rx="5" fill="#31444e"/><path d="M0 0 L-19 -24 L2 -43 L24 -39" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-19" cy="-24" r="5" fill="#263b46"/><circle cx="2" cy="-43" r="4" fill="#263b46"/><path d="M24 -44 v12 m0 -12 h8 m-8 12 h8" fill="none" stroke="#263b46" stroke-width="3"/></g></defs>
@@ -81,7 +82,7 @@
 <aside class="host-console" aria-label="Host PC 주문 및 카운트 GUI">
 <div class="console-chrome"><div><span class="console-dot"></span><strong>HOST PC</strong><span>CONTROL PANEL</span></div><span class="window-icons">− □</span></div>
 <div class="console-intro"><p class="eyebrow">ORDER MANAGEMENT</p><h2>주문 컨트롤</h2><p>제품과 수량을 정하고 공정을 시작하세요.</p></div>
-<div class="order-bar"><form id="order-form"><div class="host-label"><span class="host-icon">▤</span><div><strong>새 주문 입력</strong><small>A제품 생산 요청</small></div></div><label class="product-field">제품<select id="product" aria-label="주문 제품"><option>A제품 · 부품 3개 / 세트</option></select></label><label class="quantity-field">주문 수량<div class="quantity"><button type="button" id="minus" aria-label="주문 수량 줄이기">−</button><input id="quantity" type="number" min="1" max="20" step="1" value="2" required aria-label="주문 수량"><button type="button" id="plus" aria-label="주문 수량 늘리기">+</button></div></label><button class="primary" id="start" type="submit"><span>▶</span> 주문 · 시작</button></form><div class="order-status"><span id="run-dot"></span><strong id="run-status">주문 대기</strong><small id="order-id">수량을 정하고 시작하세요</small></div></div>
+<div class="order-bar"><form id="order-form"><div class="host-label"><span class="host-icon">▤</span><div><strong>새 주문 입력</strong><small>A제품 생산 요청</small></div></div><label class="product-field">제품<select id="product" aria-label="주문 제품"><option>A제품 · 부품 3개 / 세트</option></select></label><label class="quantity-field">주문 수량<div class="quantity"><button type="button" id="minus" aria-label="주문 수량 줄이기">−</button><input id="quantity" type="number" min="1" max="20" step="1" value="2" required aria-label="주문 수량"><button type="button" id="plus" aria-label="주문 수량 늘리기">+</button></div></label><button class="primary" id="start" type="submit"><span>▶</span> 주문 · 시작</button><button class="primary step-order" id="step-order" type="button">단계별 실행</button></form><div class="order-status"><span id="run-dot"></span><strong id="run-status">주문 대기</strong><small id="order-id">수량을 정하고 시작하세요</small></div></div>
 <p id="form-error" role="alert"></p>
 <section class="host-test" aria-label="호스트 PC 통신 시험">
 <h3>호스트 PC 통신 시험</h3>
@@ -104,5 +105,5 @@
 <footer><span><strong>ROBOT3</strong> · 1차 통합 시연</span><p>사진 기반 공정 시나리오 · 이동 경로와 소요 시간은 설명용이며 실제 로봇을 제어하지 않습니다.</p><a href="https://rorobot.atlassian.net/wiki/spaces/robot3/pages/edit-v2/19759106" target="_blank" rel="noopener">공정 목표 문서 ↗</a></footer>
 </main>
 <dialog id="photo-dialog"><button id="close-dialog" aria-label="사진 닫기">×</button><img id="dialog-image" alt=""><div><h2 id="dialog-title"></h2><p id="dialog-description"></p></div></dialog>
-<script src="engine.js?v=20260926-simple-return"></script><script src="host-client.js?v=20260926-stage-panel"></script><script src="app.js?v=20260926-stage-panel"></script>
+<script src="engine.js?v=20260928-step-conditions"></script><script src="host-client.js?v=20260928-step-conditions"></script><script src="app.js?v=20260928-step-conditions"></script>
 </body></html>
