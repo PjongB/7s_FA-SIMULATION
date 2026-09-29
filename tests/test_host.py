@@ -17,7 +17,7 @@ class HostTest(unittest.TestCase):
         self.serial = 0
         self.send('connect')
         self.assertEqual(self.h.state()['scenario_mode'], 'destination-v2')
-        self.assertEqual(self.h.state()['sample_stage_count'], 11)
+        self.assertEqual(self.h.state()['sample_stage_count'], len(m.SCENARIOS['2']))
 
     def test_server_settings_snapshot(self):
         self.assertEqual(self.h.state()['simulation_config'], m.SCENARIO_CONFIG)

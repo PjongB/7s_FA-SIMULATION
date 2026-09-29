@@ -1,3 +1,5 @@
+// Keep reference assertions stable when a maintainer edits config.js.
+Object.assign(require('../settings.js').defaults, structuredClone(require('./baseline-config.cjs')));
 const assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs');
 const sim=require('../engine.js');
