@@ -45,6 +45,8 @@
 
 ## 3. 버거1·2 Pi에서 설정할 것
 
+최신 출차 규칙은 **HOME에서 cmd_vel 10cm 후진·정지 → 180도 회전·정지 → Nav2 전진**입니다. [주행 정책 상세](NAVIGATION_POLICY.md)를 우선 적용하세요. 대기 후진 주차는 별도 로컬 도킹으로 유지합니다.
+
 버거마다 별도 Action Server를 구현하고 `MOVE_TO(target_station)` 한 건으로 출차부터 도킹·정지까지 처리합니다.
 
 - ROS 환경: domain 40, 해당 namespace, 공통 robot3_interfaces 버전.

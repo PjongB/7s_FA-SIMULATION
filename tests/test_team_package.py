@@ -21,7 +21,7 @@ class TeamPackageTest(unittest.TestCase):
                 self.assertTrue(all(x.startswith('robot3_host/') and '..' not in Path(x).parts for x in names))
                 z.extractall(tmp)
             root=Path(tmp)/'robot3_host'
-            for name in ['README.md','REAL_ROBOT_SETUP.md','config/system-config.json','config/SYSTEM_CONFIG_GUIDE.md','robot3_interfaces/action/README.md','robot3_interfaces/msg/README.md','robot3_orchestrator/README.md','robot3_web_bridge/README.md','robot3_mock_devices/README.md','launch/README.md','tests/README.md','web/index.html','web/admin.html','web/host/server.py','web/assets/full-map.jpg']:
+            for name in ['README.md','REAL_ROBOT_SETUP.md','NAVIGATION_POLICY.md','config/system-config.json','config/SYSTEM_CONFIG_GUIDE.md','robot3_interfaces/action/README.md','robot3_interfaces/msg/README.md','robot3_orchestrator/README.md','robot3_web_bridge/README.md','robot3_mock_devices/README.md','launch/README.md','tests/README.md','web/index.html','web/admin.html','web/host/server.py','web/assets/full-map.jpg']:
                 self.assertTrue((root/name).is_file(),name)
             self.assertFalse((root/'web/system-config.json').exists(),'Only one canonical system config')
             cfgpath=root/'config/system-config.json'

@@ -10,7 +10,7 @@ const photos={
  process:{title:'제작공정 · 리니어 모터',detail:'조립 전에는 A지그 위치로, 조립 후에는 초기위치로 이동합니다.'},
  pallet:{title:'로봇팔 3 · 완제품 적재',detail:'완제품을 파렛트로 옮긴 뒤 성공을 확인하면 Host의 완제품 잔여 카운트가 줄어듭니다.'},
  waiting:{title:'버거 대기장소',detail:'교차 통로에서 출구를 바라보도록 정렬한 뒤 후진 주차합니다. ArUco 마커 없이 후방 IR 센서가 검은 감지선을 감지하면 정지하고, 대기 후에는 전진으로 출차합니다.'},
- home:{title:'버거 초기위치',detail:'두 버거는 왼쪽 벽의 마커를 바라보고 주차합니다. 후진으로 출차하고, 복귀 시에는 전진 진입 후 후방 센서가 감지선에 닿는 위치에서 멈춥니다.'}
+ home:{title:'버거 초기위치',detail:'두 버거는 왼쪽 벽의 마커를 바라보고 주차합니다. 로컬 cmd_vel로 10cm 후진·정지 후 180° 회전하고 Nav2 전진 주행을 시작합니다. 복귀 시에는 전진 진입 후 후방 센서가 감지선에 닿는 위치에서 멈춥니다.'}
 };
 let plan=null,time=0,playing=false,speed=1,following=true,currentPhoto='full-map',lastEventKey='',lastFrame=0;
 let manualMode=false,manualTarget=null,stages=[],stepBusy=false;
@@ -79,7 +79,7 @@ function getScene(s){
  const f=s.focus;
  if(!f)return {key:s.events.at(-1)?.photo||'route',kicker:'WAITING FOR NEXT EVENT',title:'다음 공정을 준비합니다',detail:s.events.at(-1)?.text||'장비가 다음 단계를 기다립니다.'};
  const p=f.job==null?'':`제품 #${f.job+1} · `;
- if(f.type==='move'&&s.robots[f.actor].reversing)return {key:s.robots[f.actor].parking?'waiting':'route',kicker:s.robots[f.actor].parking?'REVERSE PARKING':'REVERSING TO TURN POINT',title:`버거 ${f.actor+1} · ${s.robots[f.actor].parking?'후진 주차':'후진 출차'}`,detail:s.robots[f.actor].parking?'출구를 바라보면서 대기 박스 안으로 후진하고, 후방 적외선 센서가 검은 감지선에 닿으면 정지합니다.':'마커를 바라보던 자세를 유지하며 회전위치까지 후진합니다. 정지 후 다음 구간을 향해 회전합니다.'};
+ if(f.type==='move'&&s.robots[f.actor].reversing)return {key:s.robots[f.actor].parking?'waiting':'route',kicker:s.robots[f.actor].parking?'REVERSE PARKING':'LOCAL UNDOCK · 10 CM',title:`버거 ${f.actor+1} · ${s.robots[f.actor].parking?'후진 주차':'초기위치 10cm 후진'}`,detail:s.robots[f.actor].parking?'출구를 바라보면서 대기 박스 안으로 후진하고, 후방 적외선 센서가 검은 감지선에 닿으면 정지합니다.':'초기위치에서 로컬 cmd_vel로 10cm 후진·정지한 뒤 180° 회전합니다. 이후 Nav2 전진 주행으로 전환합니다. 화면의 이동 거리는 개념 표시입니다.'};
  if(f.type==='move'&&s.robots[f.actor].turning)return {key:'route',kicker:'TURNING IN PLACE',title:`버거 ${f.actor+1} · 제자리 회전`,detail:'이동을 멈추고 다음 주행 방향으로 차체를 돌립니다. 방향 정렬이 끝나면 직선 주행을 시작합니다.'};
  if(f.type==='assemble')return {key:'assembly',kicker:'ASSEMBLY IN PROGRESS',title:`${p}티칭 조립`,detail:'로봇팔 2가 A지그에서 조립합니다. 다음 주문이 있으면 다른 버거가 자재창고에서 부품을 준비합니다.'};
  if(f.type==='load')return {key:'loading',kicker:'LOADING 3 PARTS',title:`버거 ${f.robot+1} · 부품 적재`,detail:`${p}로봇팔 1이 부품 3개를 차례로 싣습니다. 적재가 모두 끝나야 제작공정으로 이동할 수 있습니다.`};

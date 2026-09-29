@@ -370,5 +370,20 @@
       "product_no",
       "event_type"
     ]
+  },
+  "navigation": {
+    "travel_mode": "NAV2_FORWARD_ONLY",
+    "initial_departure": {
+      "station": "HOME",
+      "backup_distance_m": 0.1,
+      "rotate_degrees": 180,
+      "distance_feedback": "ODOMETRY",
+      "rotation_feedback": "ODOMETRY_OR_IMU",
+      "stop_between_phases": true,
+      "executor": "BURGER_LOCAL",
+      "speed_settings_location": "BURGER_LOCAL_CONFIG"
+    },
+    "waiting_parking": "REVERSE_IR_ONLY",
+    "velocity_ownership": "SINGLE_OWNER_LOCAL_ARBITER"
   }
 }

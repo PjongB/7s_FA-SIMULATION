@@ -99,3 +99,7 @@
 웹사이트의 `host-test.zip`은 이제 `robot3_host/` 구조로 제공됩니다. 루트 README에 개발 순서·역할 분담·인수 기준을 정리했고, `config/`, `robot3_interfaces/`, `robot3_orchestrator/`, `robot3_web_bridge/`, `robot3_mock_devices/`, `launch/`, `tests/`, `web/`을 포함합니다. ROS 폴더는 아직 실행 코드가 아닌 개발 명세입니다. 기존 웹 시험은 압축 해제 후 `python3 web/host/server.py`로 실행합니다. 저장소 자체에서 실행할 때는 기존 `python3 host/server.py`를 유지합니다. 패키지 구조 원본은 [team-template/README.md](team-template/README.md)입니다.
 
 실물 연결 시 바꿀 설정·코드와 전환 순서는 [REAL_ROBOT_SETUP.md](team-template/REAL_ROBOT_SETUP.md)에 정리했고, 다운로드 ZIP 루트에도 포함합니다.
+
+## 최신 출차 경로
+
+초기 HOME에서 짧은 10cm 후진 개념 표시 → 제자리180도 → 전진 주행으로 변경했습니다. 창고/공정 사이 일반 후진 경로는 없애고 대기장소의 후진 주차는 유지합니다. 실제 로봇은 각 Pi에서 거리·yaw 확인 후 Nav2에 인계하도록 구현해야 합니다. [NAVIGATION_POLICY.md](team-template/NAVIGATION_POLICY.md) 참고. 새 기본값의 2개 주문은 9단계이며 과거 문서의 11단계는 이전 경로 기준입니다.

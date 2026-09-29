@@ -104,3 +104,7 @@ python3 host/server.py
 - 공개 기본값 변경은 JSON 수정·커밋·배포가 필요합니다. 관리자 페이지에서 파일 다운로드 링크를 제공합니다.
 - ROS 관련 값은 아직 실행부 미연결 상태입니다. 기존 HTTP ACK를 실제 장치 완료 Result로 혼동하지 않습니다.
 - 기존 `config.js`의 시뮬레이션 속도 변경 절차는 `CONFIG_GUIDE.md`를 참고하세요.
+
+## 초기 출차·전진 주행 정책 (2026-09-29 변경)
+
+`navigation.initial_departure.backup_distance_m=0.1`, `rotate_degrees=180`: HOME에서 로컬 cmd_vel 10cm 후진·정지 후 180도 회전·정지, 그다음 Nav2 전진 이동. `travel_mode=NAV2_FORWARD_ONLY`, `waiting_parking=REVERSE_IR_ONLY`입니다. 실제 버거 실행부 연결 예정이며 Host가 cmd_vel을 직접 보내는 설정이 아닙니다. 거리·회전은 odometry/IMU로 확인하고 로컬 속도는 버거 보드에서 실측 설정합니다. 팀 ZIP의 NAVIGATION_POLICY.md 참고.

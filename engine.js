@@ -15,7 +15,7 @@
     function move(robot,from,to,start,duration,job=null) {
       const route=path(from,to,robot);
       const reverseSegments=[];
-      if(['home','warehouse','assembly'].includes(from))reverseSegments.push(0);
+      if(from==='home')reverseSegments.push(0);
       if(to==='waiting')reverseSegments.push(route.length-2);
       const motion=makeMotion(route,DOCK_HEADINGS[from],duration,reverseSegments,DOCK_HEADINGS[to],config['burger'+(robot+1)]);
       motion.forEach(phase=>{phase.parking=phase.type==='drive'&&phase.reversing&&to==='waiting'&&phase.to===route.at(-1);});
@@ -24,7 +24,7 @@
       event(start,'move_start',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]}로 이동`,photo:to==='warehouse'?'warehouse':to==='home'?'home':'route'});
       for(const phase of motion){
         if(phase.type==='turn')event(start+phase.start,'turn_start',{robot,from,to,job,text:`버거 ${robot+1} · 정지 후 ${Math.abs(phase.delta)===180?'180° 방향 전환':phase.delta>0?'우회전 90°':'좌회전 90°'}`,photo:'route'});
-        else event(start+phase.start,phase.reversing?'reverse_start':'drive_start',{robot,from,to,job,text:`버거 ${robot+1} · ${phase.parking?'대기장소 후진 주차':phase.reversing?'후진 출차 · 회전위치로 이동':'전방 정렬 완료 · 직선 주행'}`,photo:phase.parking?'waiting':'route'});
+        else event(start+phase.start,phase.reversing?'reverse_start':'drive_start',{robot,from,to,job,text:`버거 ${robot+1} · ${phase.parking?'대기장소 후진 주차':phase.reversing?'초기위치 10cm 후진 · 로컬 cmd_vel 출차':'전방 정렬 완료 · 직선 주행'}`,photo:phase.parking?'waiting':'route'});
       }
       event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} ${to==='waiting'?'후진 주차 완료':'도착'} · 후방 감지선 도달·정지`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
       return end;
@@ -83,7 +83,8 @@
   function path(from,to,robot) {
     if(from==='home'&&(to==='warehouse'||to==='waiting')){
       const p=point(from,robot);
-      return [p,[340,p[1]],point(to,robot)];
+      // 40 drawing units illustrate the 10 cm local undock; this map has no metric scale.
+      return [p,[p[0]+40,p[1]],[340,p[1]],point(to,robot)];
     }
     if(from==='waiting'&&to==='home'){
       const p=point(to,robot);
@@ -176,7 +177,7 @@
         const r=robots[t.actor];
         Object.assign(r,motionPose(t,time));
         if(r.turning)r.status='정지 · 제자리 회전 중';
-        else if(r.reversing)r.status=r.parking?'대기장소 후진 주차 중':'후진 출차 · 회전위치 이동';
+        else if(r.reversing)r.status=r.parking?'대기장소 후진 주차 중':'초기위치 10cm 후진 중';
       }
       if(t.type==='prepare')state.linear=f;
       if(t.type==='reset')state.linear=1-f;

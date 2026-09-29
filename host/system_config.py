@@ -23,6 +23,13 @@ def validate(config):
         raise ValueError('현재 엔진은 A제품·부품 3개만 지원하며 자동 진행은 boolean입니다.')
     number(c['web_host']['port'], 1024, 65535, True)
     number(c['web_host']['browser_timeout_seconds'], 1, 60)
+    nav = c['navigation']
+    if nav['travel_mode'] != 'NAV2_FORWARD_ONLY' or nav['waiting_parking'] != 'REVERSE_IR_ONLY':
+        raise ValueError('일반 주행은 Nav2 전진, 대기 주차는 후진 IR 방식입니다.')
+    departure = nav['initial_departure']
+    number(departure['backup_distance_m'], .01, .5)
+    if departure['rotate_degrees'] != 180 or departure['station'] != 'HOME' or departure['stop_between_phases'] is not True:
+        raise ValueError('초기 HOME 출차: 후진·정지 후 180도 회전이 필요합니다.')
     ros = c['ros2']
     number(ros['domain_id'], 0, 101, True)
     for key in ['heartbeat_hz', 'heartbeat_timeout_seconds', 'goal_response_timeout_seconds']:

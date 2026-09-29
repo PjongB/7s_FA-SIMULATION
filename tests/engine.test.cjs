@@ -53,7 +53,7 @@ for(let n=1;n<=20;n++){
   assert.equal(staging[0].start,firstArrival.time);
   assert(staging[0].start<plan.jobs[0].dispatch);
   assert.equal(snapshot(plan,firstArrival.time-.001).robots[1].status,'초기위치 대기');
-  assert.equal(snapshot(plan,firstArrival.time).robots[1].status,'후진 출차 · 회전위치 이동');
+  assert.equal(snapshot(plan,firstArrival.time).robots[1].status,'초기위치 10cm 후진 중');
   assert.equal(snapshot(plan,staging[0].end).robots[1].status,'대기장소 대기');
  }
 }
@@ -130,26 +130,27 @@ for(const n of [1,2,3,20]){
  snapshot(plan,plan.duration).robots.forEach(r=>assert.equal(r.heading,270));
  for(const task of plan.tasks.filter(t=>t.type==='move')){
   const phases=task.motion;
-  if(task.from==='home'||task.from==='warehouse'||task.from==='assembly'){
-   assert.equal(phases[0].type,'drive');assert(phases[0].reversing,'Back out before turning');
-   assert.equal(phases[0].heading,DOCK_HEADINGS[task.from]);
+  if(task.from==='home'){
+   assert.equal(phases[0].type,'drive');assert(phases[0].reversing);
+   assert.equal(phases[0].heading,270);
+   assert.equal(phases[0].to[0]-phases[0].from[0],40,'Short schematic undock only');
+   assert.equal(phases[1].type,'turn');assert.equal(Math.abs(phases[1].delta),180);
+   assert.equal(phases[1].heading,270);assert.equal(phases[1].targetHeading,90);
+   assert.equal(phases[2].type,'drive');assert.equal(phases[2].reversing,false);
   }
-  if(task.from==='home'&&task.to==='warehouse'||task.from==='warehouse'&&task.to==='assembly'){
-   assert.deepEqual(phases.map(p=>p.type),['drive','turn','drive']);
-   assert.equal(phases[1].delta,90,'Clockwise right turn');
-   assert.equal(phases[2].reversing,false);
+  if(task.from==='warehouse'||task.from==='assembly'){
+   assert.equal(phases[0].type,'turn');assert.equal(Math.abs(phases[0].delta),180);
   }
+  phases.filter(p=>p.type==='drive'&&p.reversing).forEach(p=>{
+   assert((task.from==='home'&&p===phases[0])||(task.to==='waiting'&&p.parking),'No reverse transit outside local undock/parking');
+  });
   if(task.from==='assembly'&&task.to==='home'){
-   assert.deepEqual(phases[0].to,[340,750]);
-   assert.equal(phases[1].type,'turn');
-   assert.deepEqual(phases.filter(p=>p.type==='turn').map(p=>p.delta),task.actor===0?[-90,-90]:[90,90]);
-   assert(phases.filter(p=>p.type==='turn').every(p=>p.position[0]===340),'Turn only on central aisle');
-   assert(phases.slice(2).filter(p=>p.type==='drive').every(p=>!p.reversing));
+   assert(phases.filter(p=>p.type==='drive').every(p=>!p.reversing));
    assert.equal(phases.at(-1).type,'drive');assert.equal(phases.at(-1).heading,270);
   }
  }
 }
-console.log('PASS: wall-facing homes, reverse exits, right turns to warehouse/assembly and two left/right turns on central aisle before forward return.');
+console.log('PASS: short home reverse exit → 180° turn → forward transit; reverse permitted only for local initial undock and waiting parking.');
 
 for(let n=2;n<=20;n++){
  const plan=makePlan(n),last=plan.jobs.at(-1),other=1-last.robot;
