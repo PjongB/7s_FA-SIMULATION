@@ -1,3 +1,4 @@
+import copy
 import importlib.util
 import json
 import threading
@@ -10,10 +11,16 @@ spec = importlib.util.spec_from_file_location('server', Path(__file__).resolve()
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 
+def baseline_system_config():
+    c=copy.deepcopy(m.SYSTEM_CONFIG)
+    c['order'].update(quantity_min=1,quantity_max=20,quantity_default=2,auto_advance_default=False)
+    c['web_host']['browser_timeout_seconds']=5
+    return c
+
 class HostTest(unittest.TestCase):
     def setUp(self):
         self.now = 0
-        self.h = m.Host(lambda: self.now)
+        self.h = m.Host(lambda: self.now, baseline_system_config())
         self.serial = 0
         self.send('connect')
         self.assertEqual(self.h.state()['scenario_mode'], 'destination-v2')
@@ -99,6 +106,7 @@ class HostTest(unittest.TestCase):
 class HTTPTest(unittest.TestCase):
     def test_real_http(self):
         server=m.make_server(0)
+        server.host=m.Host(system_config=baseline_system_config())
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         base=f'http://127.0.0.1:{server.server_port}'
         try:
