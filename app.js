@@ -40,7 +40,7 @@ function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${Str
 function validateQuantity(){const n=Number($('quantity').value);if(!Number.isInteger(n)||n<1||n>20)throw Error('주문 수량을 1~20 사이의 정수로 입력해 주세요.');return n;}
 function setPhoto(key){if(currentPhoto!==key||!$('scene-image').getAttribute('src')){$('scene-image').src=photoPath(key);currentPhoto=key;}$('scene-image').alt=photos[key].title;}
 function openPhoto(key){$('dialog-image').src=photoPath(key);$('dialog-image').alt=photos[key].title;$('dialog-title').textContent=photos[key].title;$('dialog-description').textContent=photos[key].detail;$('photo-dialog').showModal();}
-function begin(run=true){manualMode=false;manualTarget=null;if(HostBridge.enabled){try{HostBridge.start(validateQuantity());}catch(e){$('form-error').textContent=e.message;}return;}try{plan=RobotSimulation.makePlan(validateQuantity());stages=RobotSimulation.stagesFor(plan.quantity);time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
+function begin(run=true){manualMode=false;manualTarget=null;if(HostBridge.enabled){try{HostBridge.start(validateQuantity());}catch(e){$('form-error').textContent=e.message;}return;}try{plan=RobotSimulation.makePlan(validateQuantity(),SimulationSettings.read().config);stages=RobotSimulation.stagesFor(plan.quantity,plan.config);time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
 function reset(){if(HostBridge.enabled)return;plan=null;manualMode=false;manualTarget=null;stages=[];time=0;playing=false;following=true;lastEventKey='';setPhoto('full-map');render();}
 function step(direction){if(HostBridge.enabled)return;manualMode=false;manualTarget=null;if(!plan){begin(false);return;}playing=false;const times=[...new Set(plan.events.map(e=>e.time))];time=direction>0?(times.find(t=>t>time+0.001)??plan.duration):([...times].reverse().find(t=>t<time-0.001)??0);render();}
 function togglePlay(){if(HostBridge.enabled)return;if(manualMode){if(playing){playing=false;render();}else runStage();return;}if(!plan){begin();return;}if(time>=plan.duration){time=0;lastEventKey='';}playing=!playing;render();}
@@ -184,7 +184,7 @@ function applyHostState(state){
  if(!state){render();return;}
  if(!state.quantity){plan=null;time=0;lastEventKey='';}
  else{
-  if(!plan||plan.hostOrder!==state.order_id){plan=RobotSimulation.makePlan(state.quantity);stages=RobotSimulation.stagesFor(state.quantity);manualMode=false;manualTarget=null;plan.hostOrder=state.order_id;time=state.time;following=true;lastEventKey='';}
+  if(!plan||plan.hostOrder!==state.order_id){plan=RobotSimulation.makePlan(state.quantity,state.simulation_config||SimulationSettings.defaults);stages=RobotSimulation.stagesFor(state.quantity,plan.config);manualMode=false;manualTarget=null;plan.hostOrder=state.order_id;time=state.time;following=true;lastEventKey='';}
   time=Math.max(time,state.time);
   playing=HostBridge.online&&state.status==='running';
  }

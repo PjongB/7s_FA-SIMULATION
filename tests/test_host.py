@@ -19,6 +19,10 @@ class HostTest(unittest.TestCase):
         self.assertEqual(self.h.state()['scenario_mode'], 'destination-v2')
         self.assertEqual(self.h.state()['sample_stage_count'], 11)
 
+    def test_server_settings_snapshot(self):
+        self.assertEqual(self.h.state()['simulation_config'], m.SCENARIO_CONFIG)
+        self.assertEqual(m.SCENARIO_CONFIG['version'], 1)
+
     def send(self, action, **data):
         self.serial += 1
         return self.h.handle(action, {'client_id':'test-client', 'message_id':str(self.serial), **data})

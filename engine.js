@@ -1,10 +1,12 @@
 /* Deterministic, seekable process simulation. Durations are illustrative seconds. */
 (function (root) {
   'use strict';
+  const Settings=typeof module!=='undefined'&&module.exports?require('./settings.js'):root.SimulationSettings;
   const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,750] };
   const DOCK_HEADINGS = {home:270,waiting:0,warehouse:0,assembly:90};
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
-  function makePlan(quantity) {
+  function makePlan(quantity, config=Settings.defaults) {
+    config=Settings.validate(config);
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new RangeError('주문 수량은 1~20 사이의 정수로 입력하세요.');
     const tasks=[], events=[], jobs=[], tails=[0,0];
     let serial=0;
@@ -15,7 +17,7 @@
       const reverseSegments=[];
       if(['home','warehouse','assembly'].includes(from))reverseSegments.push(0);
       if(to==='waiting')reverseSegments.push(route.length-2);
-      const motion=makeMotion(route,DOCK_HEADINGS[from],duration,reverseSegments,DOCK_HEADINGS[to]);
+      const motion=makeMotion(route,DOCK_HEADINGS[from],duration,reverseSegments,DOCK_HEADINGS[to],config['burger'+(robot+1)]);
       motion.forEach(phase=>{phase.parking=phase.type==='drive'&&phase.reversing&&to==='waiting'&&phase.to===route.at(-1);});
       const end=start+motion.at(-1).end;
       task(robot,'move',start,end,{from,to,job,motion});
@@ -37,43 +39,45 @@
         warehouseStart=Math.max(tails[robot],prior.assemblyStart);
       }
       const loadStart=move(robot,i===0?'home':'waiting','warehouse',warehouseStart,4,i);
-      const loaded=loadStart+4.5;
+      const loaded=loadStart+3*config.process.loadPartSeconds;
       task('arm1','load',loadStart,loaded,{robot,job:i});
       event(loadStart,'load_start',{robot,job:i,text:`로봇팔 1 · 버거 ${robot+1}에 부품 3개 적재 시작`,photo:'loading'});
-      for(let n=1;n<=3;n++)event(loadStart+n*1.5,'part',{robot,job:i,part:n,text:`제품 #${i+1} · 부품 ${n}/3 적재`,photo:'loading'});
+      for(let n=1;n<=3;n++)event(loadStart+n*config.process.loadPartSeconds,'part',{robot,job:i,part:n,text:`제품 #${i+1} · 부품 ${n}/3 적재`,photo:'loading'});
       const dispatch=Math.max(loaded,prior?prior.palletEnd:0,prior?prior.waitEnd:0);
       task(robot,'gate',loaded,dispatch,{job:i});
       event(dispatch,'dispatch',{robot,job:i,text:`제품 #${i+1} · 제작공정 운송 시작 / 운송 잔여 −1`,photo:'route'});
       const arrived=move(robot,'warehouse','assembly',dispatch,5,i);
-      const jigStart=prior?prior.palletEnd:0, jigReady=jigStart+3;
+      const jigStart=prior?prior.palletEnd:0, jigReady=jigStart+config.process.linearPrepareSeconds;
       task('linear','prepare',jigStart,jigReady,{job:i});
       event(jigStart,'jig_start',{job:i,text:`리니어 모터 · A지그 위치로 이동`,photo:'process'});
       event(jigReady,'jig_ready',{job:i,text:`리니어 모터 · A지그 위치 도달`,photo:'process'});
-      const assemblyStart=Math.max(arrived,jigReady), assemblyEnd=assemblyStart+6;
+      const assemblyStart=Math.max(arrived,jigReady), assemblyEnd=assemblyStart+config.process.assemblySeconds;
       task('arm2','assemble',assemblyStart,assemblyEnd,{robot,job:i});
       event(assemblyStart,'assembly_start',{robot,job:i,text:`로봇팔 2 · 제품 #${i+1} 티칭 조립 시작`,photo:'assembly'});
       event(assemblyEnd,'assembly_end',{robot,job:i,text:`제품 #${i+1} 조립 완료`,photo:'assembly'});
-      task('linear','reset',assemblyEnd,assemblyEnd+2,{job:i});
+      task('linear','reset',assemblyEnd,assemblyEnd+config.process.linearHomeSeconds,{job:i});
       event(assemblyEnd,'jig_reset',{job:i,text:'리니어 모터 · 초기위치 복귀 시작',photo:'process'});
-      event(assemblyEnd+2,'jig_home',{job:i,text:'리니어 모터 · 초기위치 복귀 완료',photo:'pallet'});
-      const palletStart=assemblyEnd+2,palletEnd=palletStart+3;
+      event(assemblyEnd+config.process.linearHomeSeconds,'jig_home',{job:i,text:'리니어 모터 · 초기위치 복귀 완료',photo:'pallet'});
+      const palletStart=assemblyEnd+config.process.linearHomeSeconds,palletEnd=palletStart+config.process.palletSeconds;
       task('arm3','pallet',palletStart,palletEnd,{job:i});
       event(palletStart,'pallet_start',{job:i,text:`로봇팔 3 · 제품 #${i+1} 파렛트 이송`,photo:'pallet'});
       event(palletEnd,'pallet_end',{job:i,text:`제품 #${i+1} 파렛트 적재 성공 / 완제품 잔여 −1`,photo:'pallet'});
       const last=i===quantity-1;
-      const waitEnd=move(robot,'assembly',last?'home':'waiting',assemblyEnd,last?6:4,i);
+      let returnStart=assemblyEnd;
+      if(last&&quantity>1){
+        const other=1-robot;
+        tails[other]=move(other,'waiting','home',Math.max(arrived,tails[other]),3);
+        returnStart=Math.max(returnStart,tails[other]);
+      }
+      const waitEnd=move(robot,'assembly',last?'home':'waiting',returnStart,last?6:4,i);
       tails[robot]=waitEnd;
       jobs.push({id:i,robot,warehouseStart,loadStart,loaded,dispatch,arrived,assemblyStart,assemblyEnd,palletStart,palletEnd,waitEnd});
     }
     const last=jobs[quantity-1];
-    if(quantity>1) {
-      const other=1-last.robot;
-      tails[other]=move(other,'waiting','home',Math.max(last.arrived,tails[other]),3);
-    }
     const duration=Math.max(...tails,last.palletEnd);
     event(duration,'complete',{text:`주문 완료 · A제품 ${quantity}개 적재 / 버거 1·2 초기위치 확인`,photo:'pallet'});
     events.sort((a,b)=>a.time-b.time||a.serial-b.serial);
-    return {quantity,tasks,events,jobs,duration};
+    return {quantity,tasks,events,jobs,duration,config};
   }
   function point(place,robot) {return POINTS[place==='home'?'home'+(robot+1):place];}
   function path(from,to,robot) {
@@ -109,7 +113,7 @@
     return {position:points.at(-1),heading:0};
   }
   function position(points,progress) {return pose(points,progress).position;}
-  function makeMotion(points,initialHeading,driveDuration,reverseSegments=[],finalHeading=null){
+  function makeMotion(points,initialHeading,driveDuration,reverseSegments=[],finalHeading=null,speeds={forwardSpeed:1,reverseSpeed:1,turnSpeed:90}){
     const lengths=points.slice(1).map((p,i)=>Math.hypot(p[0]-points[i][0],p[1]-points[i][1]));
     const total=lengths.reduce((a,b)=>a+b,0),motion=[];
     let cursor=0,heading=initialHeading;
@@ -119,17 +123,17 @@
       const next=(Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI+450+(reversing?180:0))%360;
       const delta=(next-heading+540)%360-180;
       if(Math.abs(delta)>1e-8){
-        const end=cursor+Math.abs(delta)/90; // Illustrative: one second per quarter turn.
+        const end=cursor+Math.abs(delta)/speeds.turnSpeed; // Configured illustrative angular speed.
         motion.push({type:'turn',start:cursor,end,position:a,heading,delta,targetHeading:next});
         cursor=end;
       }
-      const end=cursor+driveDuration*lengths[i]/total;
+      const end=cursor+driveDuration*lengths[i]/total/(reversing?speeds.reverseSpeed:speeds.forwardSpeed);
       motion.push({type:'drive',start:cursor,end,from:a,to:b,heading:next,reversing});
       cursor=end;heading=next;
     }
     if(finalHeading!==null){
       const delta=(finalHeading-heading+540)%360-180;
-      if(Math.abs(delta)>1e-8)motion.push({type:'turn',start:cursor,end:cursor+Math.abs(delta)/90,position:points.at(-1),heading,delta,targetHeading:finalHeading});
+      if(Math.abs(delta)>1e-8)motion.push({type:'turn',start:cursor,end:cursor+Math.abs(delta)/speeds.turnSpeed,position:points.at(-1),heading,delta,targetHeading:finalHeading});
     }
     return motion;
   }
@@ -180,8 +184,8 @@
     state.focus=[...state.active].sort((a,b)=>({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[b.type]||0)-({pallet:5,assemble:4,load:3,move:2,prepare:1,reset:1,gate:0}[a.type]||0))[0];
     return state;
   }
-function stagesFor(quantity){
- const p=makePlan(quantity);
+function stagesFor(quantity,config=Settings.defaults){
+ const p=makePlan(quantity,config);
  const completed=e=>['arrive','assembly_end','jig_ready','jig_home','pallet_end','complete'].includes(e.kind)||(e.kind==='part'&&e.part===3);
  // A global ACK barrier must never freeze another robot halfway through its trip.
  // Keep turns/drives inside each move; pause only when every moving robot has

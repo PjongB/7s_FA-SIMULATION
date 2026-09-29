@@ -13,6 +13,8 @@ from urllib.parse import urlsplit, parse_qs
 ROOT = Path(__file__).resolve().parent.parent
 SCENARIOS = json.loads((ROOT / 'host/scenarios.json').read_text())
 
+SCENARIO_CONFIG = json.loads((ROOT / 'host/scenario-config.json').read_text())
+
 class Host:
     def __init__(self, clock=time.monotonic):
         self.clock = clock
@@ -38,7 +40,7 @@ class Host:
     def state(self):
         self.check_timeout()
         stage = SCENARIOS[str(self.quantity)][self.index] if self.index >= 0 else None
-        return {'protocol': 1, 'scenario_mode': 'destination-v2',
+        return {'simulation_config': SCENARIO_CONFIG, 'protocol': 1, 'scenario_mode': 'destination-v2',
                 'sample_stage_count': len(SCENARIOS['2']),
                 'stage_count': len(SCENARIOS[str(self.quantity)]) if self.quantity else 0, 'status': self.status, 'order_id': self.order_id,
                 'quantity': self.quantity, 'acked_seq': self.index + 1,
@@ -167,7 +169,7 @@ class Handler(BaseHTTPRequestHandler):
             with self.server.lock:
                 return self.reply(200, self.server.host.state())
         name = path.lstrip('/') or 'index.html'
-        allowed = name in {'index.html', 'styles.css', 'app.js', 'engine.js', 'host-client.js'} or (name.startswith('assets/') and '..' not in name)
+        allowed = name in {'index.html', 'styles.css', 'app.js', 'engine.js', 'host-client.js', 'config.js', 'settings.js', 'admin.html', 'admin.js', 'admin.css'} or (name.startswith('assets/') and '..' not in name)
         target = (ROOT / name).resolve()
         if not allowed or not target.is_relative_to(ROOT) or not target.is_file():
             return self.reply(404, {'error': '파일 없음'})

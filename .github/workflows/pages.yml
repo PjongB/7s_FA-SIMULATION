@@ -29,12 +29,13 @@ jobs:
           node tests/host-client.test.cjs
           node tests/host-stages.test.cjs
           node tests/step-ui.test.cjs
+          node tests/settings.test.cjs
           python3 -m unittest discover -s tests -p "test_host.py"
           python3 host/package.py
       - name: Prepare static website
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js engine.js host-client.js host-test.zip _site/
+          cp index.html styles.css app.js engine.js host-client.js config.js settings.js admin.html admin.js admin.css host-test.zip _site/
           cp -R assets _site/assets
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
