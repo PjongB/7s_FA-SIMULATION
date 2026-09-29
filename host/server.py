@@ -1,5 +1,6 @@
 """Loopback-only Host PC / browser handshake test. No robot connections."""
 import argparse
+import sys
 import json
 import mimetypes
 import secrets
@@ -11,12 +12,16 @@ from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / 'host'))
+from system_config import load as load_system_config
+SYSTEM_CONFIG = load_system_config()
 SCENARIOS = json.loads((ROOT / 'host/scenarios.json').read_text())
 
 SCENARIO_CONFIG = json.loads((ROOT / 'host/scenario-config.json').read_text())
 
 class Host:
-    def __init__(self, clock=time.monotonic):
+    def __init__(self, clock=time.monotonic, system_config=None):
+        self.config = system_config or SYSTEM_CONFIG
         self.clock = clock
         self.owner = None
         self.seen = 0
@@ -25,7 +30,7 @@ class Host:
         self.quantity = 0
         self.index = -1
         self.pending = None
-        self.auto = False
+        self.auto = self.config['order']['auto_advance_default']
         self.log = deque(maxlen=80)
         self.requests = deque(maxlen=256)
 
@@ -33,14 +38,14 @@ class Host:
         self.log.append({'at': time.strftime('%H:%M:%S'), 'kind': kind, 'detail': detail})
 
     def check_timeout(self):
-        if self.owner and self.clock() - self.seen > 5 and self.status == 'running':
+        if self.owner and self.clock() - self.seen > self.config['web_host']['browser_timeout_seconds'] and self.status == 'running':
             self.status = 'paused'
-            self.note('HOLD', '5초 동안 브라우저 응답 없음 · 재개 지시 필요')
+            self.note('HOLD', f"{self.config['web_host']['browser_timeout_seconds']}초 동안 브라우저 응답 없음 · 재개 지시 필요")
 
     def state(self):
         self.check_timeout()
         stage = SCENARIOS[str(self.quantity)][self.index] if self.index >= 0 else None
-        return {'simulation_config': SCENARIO_CONFIG, 'protocol': 1, 'scenario_mode': 'destination-v2',
+        return {'order_policy': self.config['order'], 'simulation_config': SCENARIO_CONFIG, 'protocol': 1, 'scenario_mode': 'destination-v2',
                 'sample_stage_count': len(SCENARIOS['2']),
                 'stage_count': len(SCENARIOS[str(self.quantity)]) if self.quantity else 0, 'status': self.status, 'order_id': self.order_id,
                 'quantity': self.quantity, 'acked_seq': self.index + 1,
@@ -81,8 +86,9 @@ class Host:
             return self.state()
         if action == 'start':
             q = data.get('quantity')
-            if type(q) is not int or not 1 <= q <= 20:
-                raise ValueError('수량은 1~20 정수여야 합니다.')
+            policy = self.config['order']
+            if type(q) is not int or not policy['quantity_min'] <= q <= policy['quantity_max']:
+                raise ValueError(f"수량은 {policy['quantity_min']}~{policy['quantity_max']} 정수여야 합니다.")
             if self.status not in ('idle', 'done'):
                 raise ValueError('현재 주문을 초기화한 뒤 새 주문을 시작하세요.')
             self.quantity, self.index = q, -1
@@ -168,8 +174,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/state':
             with self.server.lock:
                 return self.reply(200, self.server.host.state())
+        if path == '/system-policy.js':
+            script = 'window.SYSTEM_ORDER_POLICY = ' + json.dumps(self.server.host.config['order']) + ';'
+            return self.reply(200, script.encode(), 'text/javascript')
         name = path.lstrip('/') or 'index.html'
-        allowed = name in {'index.html', 'styles.css', 'app.js', 'engine.js', 'host-client.js', 'config.js', 'settings.js', 'admin.html', 'admin.js', 'admin.css'} or (name.startswith('assets/') and '..' not in name)
+        allowed = name in {'index.html', 'styles.css', 'app.js', 'engine.js', 'host-client.js', 'config.js', 'settings.js', 'admin.html', 'admin.js', 'admin.css', 'system-config.json'} or (name.startswith('assets/') and '..' not in name)
         target = (ROOT / name).resolve()
         if not allowed or not target.is_relative_to(ROOT) or not target.is_file():
             return self.reply(404, {'error': '파일 없음'})
@@ -205,7 +214,7 @@ def make_server(port=8082):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--port', type=int, default=8082)
+    parser.add_argument('--port', type=int, default=SYSTEM_CONFIG['web_host']['port'])
     args = parser.parse_args()
     with make_server(args.port) as server:
         print(f'Host PC 시험 화면: http://127.0.0.1:{server.server_port}/?host=1', flush=True)

@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Test simulation rules
         run: |
+          python3 host/system_config.py --write-web-policy
+          python3 -m unittest discover -s tests -p "test_system_config.py"
           node host/build_scenarios.cjs
           node tests/engine.test.cjs
           node tests/host-client.test.cjs
@@ -35,7 +37,7 @@ jobs:
       - name: Prepare static website
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js engine.js host-client.js config.js settings.js admin.html admin.js admin.css host-test.zip _site/
+          cp index.html styles.css app.js engine.js host-client.js config.js settings.js admin.html admin.js admin.css system-config.json system-policy.js host-test.zip _site/
           cp -R assets _site/assets
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

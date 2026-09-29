@@ -37,3 +37,12 @@ assert.equal(el('conditions-list').children.at(-1).className,'condition-done');
 bridge.online=false;run('render()');assert.equal(el('step-order').disabled,true);
 assert.equal(el('conditions-list').children.at(-2).className,'');
 console.log('PASS: conditions for orders 1–20, animated stage barrier, double click, reset, automatic playback, Host ACK and offline UI.');
+
+bridge.enabled=false;ctx.window.SYSTEM_ORDER_POLICY={quantity_min:2,quantity_max:5,quantity_default:3};
+run('reset()');el('quantity').value='6';assert.throws(()=>run('validateQuantity()'));
+el('quantity').value='3';assert.equal(run('validateQuantity()'),3);
+bridge.enabled=true;bridge.online=true;bridge.state={status:'idle',quantity:0,order_policy:{quantity_min:2,quantity_max:4,quantity_default:3}};
+run('applyHostState(HostBridge.state)');assert.equal(Number(el('quantity').value),3);
+el('quantity').value='4';run('applyHostState(HostBridge.state)');assert.equal(el('quantity').value,'4');
+assert.equal(Number(el('quantity').max),4);
+console.log('PASS: public and Host quantity policy, idle heartbeat preserves operator input.');

@@ -88,3 +88,7 @@ python3 build_standalone.py
 - `admin.html`, `admin.css`, `admin.js`: 관리자 화면
 - `engine.js`: 설정에 따른 이동·공정 시간 계산
 - `host/build_scenarios.cjs`: Host 시간표 생성
+
+## 주문·ROS 통신·완료 체크 설정
+
+속도 외 Host 시스템 설정은 `system-config.json`과 [SYSTEM_CONFIG_GUIDE.md](SYSTEM_CONFIG_GUIDE.md)를 참고하세요. 주문 범위·기본값과 HTTP Host 설정은 현재 연결됐으며 ROS 관련 규칙은 실제 실행부 구현 시 연결할 계약입니다.

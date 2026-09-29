@@ -89,3 +89,7 @@
 상단 **관리자 설정**에서 버거별 전진·후진·회전 속도와 공정 시간을 변경할 수 있습니다. 브라우저 저장, 기본값 복원, config.js 내보내기와 JSON 백업을 제공합니다. 실제 로봇 제어가 아닌 시뮬레이션 설정입니다.
 
 기본값은 루트 `config.js`에서 유지보수합니다. Host는 서버 시간표에 대응하는 설정을 사용하며, 변경 후 `node host/build_scenarios.cjs` 실행과 서버 재시작이 필요합니다. 상세 절차와 필드 설명은 [CONFIG_GUIDE.md](CONFIG_GUIDE.md)를 참고하세요.
+
+## Host 시스템 설정
+
+주문 수량 범위·기본값, ROS 2 장치 주소, 작업 명령, 완료 판정, 다음 명령 조건은 **system-config.json**에서 관리합니다. [SYSTEM_CONFIG_GUIDE.md](SYSTEM_CONFIG_GUIDE.md)에 수정 위치와 적용 여부를 정리했습니다. `python3 host/system_config.py --write-web-policy`로 검증·웹 수량 정책을 생성한 뒤 Host를 재시작하세요. ROS 실행부는 아직 구현 전이며 해당 통신·완료 규칙은 연결 예정 설정입니다.

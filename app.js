@@ -37,7 +37,8 @@ Object.entries(RobotSimulation.POINTS).forEach(([place,point])=>{
 });
 
 function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;}
-function validateQuantity(){const n=Number($('quantity').value);if(!Number.isInteger(n)||n<1||n>20)throw Error('주문 수량을 1~20 사이의 정수로 입력해 주세요.');return n;}
+function quantityPolicy(){return HostBridge.enabled&&HostBridge.state?.order_policy||window.SYSTEM_ORDER_POLICY||{quantity_min:1,quantity_max:20};}
+function validateQuantity(){const n=Number($('quantity').value),p=quantityPolicy();if(!Number.isInteger(n)||n<p.quantity_min||n>p.quantity_max)throw Error(`주문 수량을 ${p.quantity_min}~${p.quantity_max} 사이의 정수로 입력해 주세요.`);return n;}
 function setPhoto(key){if(currentPhoto!==key||!$('scene-image').getAttribute('src')){$('scene-image').src=photoPath(key);currentPhoto=key;}$('scene-image').alt=photos[key].title;}
 function openPhoto(key){$('dialog-image').src=photoPath(key);$('dialog-image').alt=photos[key].title;$('dialog-title').textContent=photos[key].title;$('dialog-description').textContent=photos[key].detail;$('photo-dialog').showModal();}
 function begin(run=true){manualMode=false;manualTarget=null;if(HostBridge.enabled){try{HostBridge.start(validateQuantity());}catch(e){$('form-error').textContent=e.message;}return;}try{plan=RobotSimulation.makePlan(validateQuantity(),SimulationSettings.read().config);stages=RobotSimulation.stagesFor(plan.quantity,plan.config);time=0;playing=run;following=true;lastEventKey='';$('form-error').textContent='';render();}catch(e){$('form-error').textContent=e.message;}}
@@ -59,8 +60,8 @@ async function runStage(){
 }
 $('step-order').onclick=runStage;
 $('order-form').addEventListener('submit',e=>{e.preventDefault();begin();});
-$('plus').onclick=()=>$('quantity').value=Math.min(20,Math.max(1,Number($('quantity').value)||1)+1);
-$('minus').onclick=()=>$('quantity').value=Math.max(1,(Number($('quantity').value)||1)-1);
+$('plus').onclick=()=>$('quantity').value=Math.min(quantityPolicy().quantity_max,Math.max(quantityPolicy().quantity_min,Number($('quantity').value)||quantityPolicy().quantity_min)+1);
+$('minus').onclick=()=>$('quantity').value=Math.max(quantityPolicy().quantity_min,(Number($('quantity').value)||quantityPolicy().quantity_min)-1);
 $('play').onclick=togglePlay;$('reset').onclick=reset;$('next').onclick=()=>step(1);$('previous').onclick=()=>step(-1);
 $('speed').onchange=e=>speed=Number(e.target.value);
 $('timeline').oninput=e=>{if(!plan||HostBridge.enabled)return;playing=false;manualMode=false;manualTarget=null;time=Number(e.target.value);render();};
@@ -180,8 +181,9 @@ function render(){
 }
 function applyHostState(state){
  playing=false;
- if(!HostBridge.enabled){reset();return;}
+ if(!HostBridge.enabled){const p=quantityPolicy();$('quantity').min=p.quantity_min;$('quantity').max=p.quantity_max;$('quantity').value=p.quantity_default||2;delete $('quantity').dataset.policy;reset();return;}
  if(!state){render();return;}
+ if(state.order_policy){const p=state.order_policy;$('quantity').min=p.quantity_min;$('quantity').max=p.quantity_max;const key=JSON.stringify(p);if(!state.quantity&&$('quantity').dataset.policy!==key)$('quantity').value=p.quantity_default;$('quantity').dataset.policy=key;}
  if(!state.quantity){plan=null;time=0;lastEventKey='';}
  else{
   if(!plan||plan.hostOrder!==state.order_id){plan=RobotSimulation.makePlan(state.quantity,state.simulation_config||SimulationSettings.defaults);stages=RobotSimulation.stagesFor(state.quantity,plan.config);manualMode=false;manualTarget=null;plan.hostOrder=state.order_id;time=state.time;following=true;lastEventKey='';}
@@ -199,4 +201,5 @@ function frame(now){
  }
  lastFrame=now;requestAnimationFrame(frame);
 }
+if(window.SYSTEM_ORDER_POLICY){const p=window.SYSTEM_ORDER_POLICY;$('quantity').min=p.quantity_min;$('quantity').max=p.quantity_max;$('quantity').value=p.quantity_default;}
 render();HostBridge.init(applyHostState);requestAnimationFrame(frame);
