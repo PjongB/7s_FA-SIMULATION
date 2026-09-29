@@ -4,7 +4,9 @@ import json
 import math
 from pathlib import Path
 
-DEFAULT_PATH = Path(__file__).resolve().parent.parent / 'system-config.json'
+WEB_ROOT = Path(__file__).resolve().parent.parent
+TEAM_CONFIG = WEB_ROOT.parent / 'config' / 'system-config.json'
+DEFAULT_PATH = TEAM_CONFIG if WEB_ROOT.name == 'web' and TEAM_CONFIG.is_file() else WEB_ROOT / 'system-config.json'
 
 def validate(config):
     c = copy.deepcopy(config)
@@ -69,5 +71,5 @@ if __name__ == '__main__':
     import sys
     c = load()
     if '--write-web-policy' in sys.argv:
-        (DEFAULT_PATH.parent / 'system-policy.js').write_text('/* Generated from system-config.json; do not edit. */\nwindow.SYSTEM_ORDER_POLICY = '+json.dumps(c['order'], ensure_ascii=False)+';\n')
+        (WEB_ROOT / 'system-policy.js').write_text('/* Generated from system-config.json; do not edit. */\nwindow.SYSTEM_ORDER_POLICY = '+json.dumps(c['order'], ensure_ascii=False)+';\n')
     print(f"설정 검증 완료: 수량 {c['order']['quantity_min']}~{c['order']['quantity_max']}, 장치 {len(c['devices'])}개")

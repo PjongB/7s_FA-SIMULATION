@@ -93,3 +93,7 @@
 ## Host 시스템 설정
 
 주문 수량 범위·기본값, ROS 2 장치 주소, 작업 명령, 완료 판정, 다음 명령 조건은 **system-config.json**에서 관리합니다. [SYSTEM_CONFIG_GUIDE.md](SYSTEM_CONFIG_GUIDE.md)에 수정 위치와 적용 여부를 정리했습니다. `python3 host/system_config.py --write-web-policy`로 검증·웹 수량 정책을 생성한 뒤 Host를 재시작하세요. ROS 실행부는 아직 구현 전이며 해당 통신·완료 규칙은 연결 예정 설정입니다.
+
+## 팀 개발 시작 패키지
+
+웹사이트의 `host-test.zip`은 이제 `robot3_host/` 구조로 제공됩니다. 루트 README에 개발 순서·역할 분담·인수 기준을 정리했고, `config/`, `robot3_interfaces/`, `robot3_orchestrator/`, `robot3_web_bridge/`, `robot3_mock_devices/`, `launch/`, `tests/`, `web/`을 포함합니다. ROS 폴더는 아직 실행 코드가 아닌 개발 명세입니다. 기존 웹 시험은 압축 해제 후 `python3 web/host/server.py`로 실행합니다. 저장소 자체에서 실행할 때는 기존 `python3 host/server.py`를 유지합니다. 패키지 구조 원본은 [team-template/README.md](team-template/README.md)입니다.

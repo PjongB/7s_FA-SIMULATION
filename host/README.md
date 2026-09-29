@@ -69,3 +69,7 @@ python3 host/package.py
 ## 관리자 설정
 
 `http://127.0.0.1:8082/admin.html`에서 시뮬레이션 속도·공정 시간을 조절하고 `config.js`로 내보낼 수 있습니다. 브라우저 저장값은 단독 시뮬레이션에만 적용합니다. Host 설정을 바꾸려면 서버를 종료하고 프로젝트 루트의 config.js를 교체한 뒤 `node host/build_scenarios.cjs`를 실행하고 서버를 다시 시작하세요. 생성에는 Node.js 22 이상이 필요합니다. 서버가 설정을 화면에 전달하므로 Host ACK 시간과 화면 시간이 일치합니다. 상세 내용은 ZIP 루트의 CONFIG_GUIDE.md를 참고하세요.
+
+## 새 다운로드 패키지 경로
+
+최신 ZIP 루트는 `robot3_host/`입니다. 전체 개발 안내는 루트 README.md를 확인하세요. 위 문서의 프로젝트 루트는 패키지에서는 `web/`에 해당하므로, ZIP 루트에서 실행할 때 `python3 web/host/server.py`를 사용합니다. 시스템 설정 원본은 `config/system-config.json`, 시뮬레이션 속도 설정은 `web/config.js`입니다.

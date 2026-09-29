@@ -174,6 +174,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/state':
             with self.server.lock:
                 return self.reply(200, self.server.host.state())
+        if path == '/system-config.json':
+            return self.reply(200, self.server.host.config)
         if path == '/system-policy.js':
             script = 'window.SYSTEM_ORDER_POLICY = ' + json.dumps(self.server.host.config['order']) + ';'
             return self.reply(200, script.encode(), 'text/javascript')

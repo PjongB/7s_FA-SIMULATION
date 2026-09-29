@@ -34,6 +34,7 @@ jobs:
           node tests/settings.test.cjs
           python3 -m unittest discover -s tests -p "test_host.py"
           python3 host/package.py
+          python3 -m unittest discover -s tests -p "test_team_package.py"
       - name: Prepare static website
         run: |
           mkdir -p _site
