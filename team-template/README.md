@@ -16,11 +16,16 @@
 | 가짜 장치 5개·실물 장치 Action 서버 | 팀 구현 필요 |
 | 실제 센서 기반 완료·ROS 오류/복구 처리 | 팀 구현·검증 필요 |
 
+## 실제 로봇으로 전환할 때
+
+[REAL_ROBOT_SETUP.md](REAL_ROBOT_SETUP.md)에 변경할 config 키, 버거·팔 보드 설정, 웹 코드 교체 지점, mock 종료→실물 연결 순서와 팀 확인 기록을 정리했습니다. 실제 연결 전에 각 담당자가 해당 항목을 확인하세요.
+
 ## 폴더 구조
 
 ```text
 robot3_host/
 ├─ README.md                       # 이 문서: 전체 계획·담당·실행 방법
+├─ REAL_ROBOT_SETUP.md             # 실물 전환 시 변경·연결할 항목
 ├─ config/
 │  ├─ system-config.json            # Host 주문·ROS 주소·완료·전환 규칙
 │  └─ SYSTEM_CONFIG_GUIDE.md        # 설정별 현재 적용 범위

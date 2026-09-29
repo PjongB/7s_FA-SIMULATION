@@ -97,3 +97,5 @@
 ## 팀 개발 시작 패키지
 
 웹사이트의 `host-test.zip`은 이제 `robot3_host/` 구조로 제공됩니다. 루트 README에 개발 순서·역할 분담·인수 기준을 정리했고, `config/`, `robot3_interfaces/`, `robot3_orchestrator/`, `robot3_web_bridge/`, `robot3_mock_devices/`, `launch/`, `tests/`, `web/`을 포함합니다. ROS 폴더는 아직 실행 코드가 아닌 개발 명세입니다. 기존 웹 시험은 압축 해제 후 `python3 web/host/server.py`로 실행합니다. 저장소 자체에서 실행할 때는 기존 `python3 host/server.py`를 유지합니다. 패키지 구조 원본은 [team-template/README.md](team-template/README.md)입니다.
+
+실물 연결 시 바꿀 설정·코드와 전환 순서는 [REAL_ROBOT_SETUP.md](team-template/REAL_ROBOT_SETUP.md)에 정리했고, 다운로드 ZIP 루트에도 포함합니다.
