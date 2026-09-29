@@ -16,5 +16,5 @@
 <section class="admin-card maintenance"><h2>config 파일로 유지보수하기</h2><ol><li>값을 조절하고 <strong>config.js 내보내기</strong>를 누릅니다. 내보내기는 브라우저 저장과 별개입니다.</li><li>프로젝트 루트의 <code>config.js</code>를 다운로드한 파일로 교체합니다. 브라우저 저장값이 있다면 <strong>기본값으로 복원</strong>해야 새 파일의 값이 적용됩니다.</li><li>GitHub에 반영하면 공개 사이트의 기본 설정이 바뀝니다. 관리자 페이지 저장만으로 공개 파일이 수정되지는 않습니다.</li></ol><h3>Host PC에 적용</h3><p>서버를 종료한 뒤 아래 명령으로 새 설정에 맞는 단계 시간표를 생성하고 다시 실행하세요. 생성에는 Node.js, 서버 실행에는 Python 3가 필요합니다. 실행 중인 주문에는 설정을 바꾸지 않습니다.</p><pre><code>node host/build_scenarios.cjs
 python3 host/server.py</code></pre><p>Host 모드에서는 서버가 전달한 설정으로 화면과 완료 ACK 시간을 맞춥니다. 브라우저 개인 설정은 Host 주문에 적용되지 않습니다.</p><p><a href="config.js" download>현재 배포 기본 config.js 다운로드 ↗</a></p></section>
 </main>
-<script src="config.js?v=20260929-admin"></script><script src="settings.js?v=20260929-admin"></script><script src="engine.js?v=20260929-forward-nav"></script><script src="admin.js?v=20260929-admin"></script>
+<script src="config.js?v=20260929-admin"></script><script src="settings.js?v=20260929-admin"></script><script src="engine.js?v=20260929-dock-undock"></script><script src="admin.js?v=20260929-admin"></script>
 </body></html>

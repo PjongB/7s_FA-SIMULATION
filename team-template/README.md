@@ -18,7 +18,7 @@
 
 ## 최신 주행 방식
 
-초기위치에서 로컬 cmd_vel로 10cm 후진·정지 → 180도 회전·정지 → Nav2 전진 주행으로 변경했습니다. 대기장소의 후진 IR 주차는 유지합니다. [NAVIGATION_POLICY.md](NAVIGATION_POLICY.md)에 구현·설정·시험 기준을 정리했습니다.
+초기위치·자재창고·제작공정에서 로컬 cmd_vel로 10cm 후진·정지 → 180도 회전·정지 → Nav2 전진 주행으로 변경했습니다. 대기장소의 후진 IR 주차는 유지합니다. [NAVIGATION_POLICY.md](NAVIGATION_POLICY.md)에 구현·설정·시험 기준을 정리했습니다.
 
 ## 실제 로봇으로 전환할 때
 

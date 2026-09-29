@@ -15,4 +15,4 @@
 
 실제 보드로 교체할 때는 [실물 전환 안내](../REAL_ROBOT_SETUP.md)를 함께 확인하세요.
 
-초기 10cm 후진·180도 회전은 버거의 MOVE_TO 내부 처리입니다. Host는 cmd_vel을 발행하거나 출차 단계마다 새 명령을 보내지 않습니다. [주행 정책](../NAVIGATION_POLICY.md) 참고.
+도킹 위치의 10cm 후진·180도 회전은 버거의 MOVE_TO 내부 처리입니다. Host는 cmd_vel을 발행하거나 출차 단계마다 새 명령을 보내지 않습니다. [주행 정책](../NAVIGATION_POLICY.md) 참고.

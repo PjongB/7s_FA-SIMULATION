@@ -107,4 +107,4 @@ python3 host/server.py
 
 ## 초기 출차·전진 주행 정책 (2026-09-29 변경)
 
-`navigation.initial_departure.backup_distance_m=0.1`, `rotate_degrees=180`: HOME에서 로컬 cmd_vel 10cm 후진·정지 후 180도 회전·정지, 그다음 Nav2 전진 이동. `travel_mode=NAV2_FORWARD_ONLY`, `waiting_parking=REVERSE_IR_ONLY`입니다. 실제 버거 실행부 연결 예정이며 Host가 cmd_vel을 직접 보내는 설정이 아닙니다. 거리·회전은 odometry/IMU로 확인하고 로컬 속도는 버거 보드에서 실측 설정합니다. 팀 ZIP의 NAVIGATION_POLICY.md 참고.
+`navigation.dock_departure.backup_distance_m=0.1`, `rotate_degrees=180`: HOME·WAREHOUSE·ASSEMBLY에서 로컬 cmd_vel 10cm 후진·정지 후 180도 회전·정지, 그다음 Nav2 전진 이동. `travel_mode=NAV2_FORWARD_ONLY`, `waiting_parking=REVERSE_IR_ONLY`입니다. 실제 버거 실행부 연결 예정이며 Host가 cmd_vel을 직접 보내는 설정이 아닙니다. 거리·회전은 odometry/IMU로 확인하고 로컬 속도는 버거 보드에서 실측 설정합니다. 팀 ZIP의 NAVIGATION_POLICY.md 참고.

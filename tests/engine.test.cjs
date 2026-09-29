@@ -59,11 +59,13 @@ for(let n=1;n<=20;n++){
 }
 for(const robot of [0,1]){
  const route=path('warehouse','assembly',robot);
- assert.equal(route.length,3,'Storage to assembly has one turn at the aisle junction');
+ assert.equal(route.length,4,'Storage exit includes short backup before aisle transit');
+ assert.deepEqual(route.slice(0,2),[[340,300],[340,340]]);
  const approach=route.at(-2),dock=route.at(-1);
  assert.equal(approach[1],dock[1],'Final approach is horizontal');
  assert(dock[0]>approach[0],'Dock by moving straight right toward the workboard');
- assert.deepEqual(path('assembly','warehouse',robot),[...route].reverse());
+ assert.deepEqual(path('assembly','warehouse',robot)[0],route.at(-1));
+ assert.deepEqual(path('assembly','warehouse',robot).at(-1),route[0]);
 }
 console.log('PASS: staging trigger for orders 1–20, exact arrival boundary and straight assembly docking.');
 // Turning occupies time at a fixed point; driving never slides sideways.
@@ -139,18 +141,23 @@ for(const n of [1,2,3,20]){
    assert.equal(phases[2].type,'drive');assert.equal(phases[2].reversing,false);
   }
   if(task.from==='warehouse'||task.from==='assembly'){
-   assert.equal(phases[0].type,'turn');assert.equal(Math.abs(phases[0].delta),180);
+   assert.equal(phases[0].type,'drive');assert(phases[0].reversing);
+   assert.equal(phases[0].heading,DOCK_HEADINGS[task.from]);
+   assert.equal(Math.hypot(phases[0].to[0]-phases[0].from[0],phases[0].to[1]-phases[0].from[1]),40);
+   assert.equal(phases[1].type,'turn');assert.equal(Math.abs(phases[1].delta),180);
+   assert.deepEqual(phases[1].position,phases[0].to,'Turn only after clearing the dock');
+   assert.equal(phases[2].type,'drive');assert.equal(phases[2].reversing,false);
   }
   phases.filter(p=>p.type==='drive'&&p.reversing).forEach(p=>{
-   assert((task.from==='home'&&p===phases[0])||(task.to==='waiting'&&p.parking),'No reverse transit outside local undock/parking');
+   assert((['home','warehouse','assembly'].includes(task.from)&&p===phases[0])||(task.to==='waiting'&&p.parking),'No reverse transit outside local undock/parking');
   });
   if(task.from==='assembly'&&task.to==='home'){
-   assert(phases.filter(p=>p.type==='drive').every(p=>!p.reversing));
+   assert(phases.slice(1).filter(p=>p.type==='drive').every(p=>!p.reversing));
    assert.equal(phases.at(-1).type,'drive');assert.equal(phases.at(-1).heading,270);
   }
  }
 }
-console.log('PASS: short home reverse exit → 180° turn → forward transit; reverse permitted only for local initial undock and waiting parking.');
+console.log('PASS: HOME/warehouse/assembly short reverse exit → 180° turn after clearance → forward transit; waiting reverse parking retained.');
 
 for(let n=2;n<=20;n++){
  const plan=makePlan(n),last=plan.jobs.at(-1),other=1-last.robot;
@@ -164,7 +171,7 @@ console.log('PASS: final delivery docking completes before the waiting robot ret
 
 for(const robot of [0,1]){
  const home=POINTS['home'+(robot+1)];
- assert.deepEqual(path('assembly','home',robot),[POINTS.assembly,[340,750],[340,home[1]],home]);
+ assert.deepEqual(path('assembly','home',robot),[POINTS.assembly,[360,750],[340,750],[340,home[1]],home]);
  assert.deepEqual(path('waiting','home',robot),[POINTS.waiting,[340,home[1]],home]);
 }
 console.log('PASS: no extra home-side waypoints or detours on either return route.');

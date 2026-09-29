@@ -12,7 +12,7 @@ class SystemConfigTest(unittest.TestCase):
         for path, value in [(('order','quantity_max'),21),(('order','quantity_default'),0),(('web_host','browser_timeout_seconds'),-1),(('ros2','domain_id'),True)]:
             c=load();c[path[0]][path[1]]=value
             with self.assertRaises(ValueError):validate(c)
-        c=load();c['navigation']['initial_departure']['backup_distance_m']=0
+        c=load();c['navigation']['dock_departure']['backup_distance_m']=0
         with self.assertRaises(ValueError):validate(c)
         c=load();c['devices']['burger2']['action_name']=c['devices']['burger1']['action_name']
         with self.assertRaises(ValueError):validate(c)

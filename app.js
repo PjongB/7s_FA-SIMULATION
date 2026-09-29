@@ -79,7 +79,7 @@ function getScene(s){
  const f=s.focus;
  if(!f)return {key:s.events.at(-1)?.photo||'route',kicker:'WAITING FOR NEXT EVENT',title:'다음 공정을 준비합니다',detail:s.events.at(-1)?.text||'장비가 다음 단계를 기다립니다.'};
  const p=f.job==null?'':`제품 #${f.job+1} · `;
- if(f.type==='move'&&s.robots[f.actor].reversing)return {key:s.robots[f.actor].parking?'waiting':'route',kicker:s.robots[f.actor].parking?'REVERSE PARKING':'LOCAL UNDOCK · 10 CM',title:`버거 ${f.actor+1} · ${s.robots[f.actor].parking?'후진 주차':'초기위치 10cm 후진'}`,detail:s.robots[f.actor].parking?'출구를 바라보면서 대기 박스 안으로 후진하고, 후방 적외선 센서가 검은 감지선에 닿으면 정지합니다.':'초기위치에서 로컬 cmd_vel로 10cm 후진·정지한 뒤 180° 회전합니다. 이후 Nav2 전진 주행으로 전환합니다. 화면의 이동 거리는 개념 표시입니다.'};
+ if(f.type==='move'&&s.robots[f.actor].reversing)return {key:s.robots[f.actor].parking?'waiting':'route',kicker:s.robots[f.actor].parking?'REVERSE PARKING':'LOCAL UNDOCK · 10 CM',title:`버거 ${f.actor+1} · ${s.robots[f.actor].parking?'후진 주차':'도킹 위치 10cm 후진'}`,detail:s.robots[f.actor].parking?'출구를 바라보면서 대기 박스 안으로 후진하고, 후방 적외선 센서가 검은 감지선에 닿으면 정지합니다.':'초기위치·자재창고·제작공정에서 출차할 때 로컬 cmd_vel로 10cm 후진·정지한 뒤 180° 회전합니다. 이후 Nav2 전진 주행으로 전환합니다. 화면의 이동 거리는 개념 표시입니다.'};
  if(f.type==='move'&&s.robots[f.actor].turning)return {key:'route',kicker:'TURNING IN PLACE',title:`버거 ${f.actor+1} · 제자리 회전`,detail:'이동을 멈추고 다음 주행 방향으로 차체를 돌립니다. 방향 정렬이 끝나면 직선 주행을 시작합니다.'};
  if(f.type==='assemble')return {key:'assembly',kicker:'ASSEMBLY IN PROGRESS',title:`${p}티칭 조립`,detail:'로봇팔 2가 A지그에서 조립합니다. 다음 주문이 있으면 다른 버거가 자재창고에서 부품을 준비합니다.'};
  if(f.type==='load')return {key:'loading',kicker:'LOADING 3 PARTS',title:`버거 ${f.robot+1} · 부품 적재`,detail:`${p}로봇팔 1이 부품 3개를 차례로 싣습니다. 적재가 모두 끝나야 제작공정으로 이동할 수 있습니다.`};
