@@ -108,23 +108,30 @@ for(const n of [2,3,20]){
  const plan=makePlan(n);
  for(const task of plan.tasks.filter(t=>t.type==='move'&&t.to==='waiting')){
   const before=snapshot(plan,task.end-.01).robots[task.actor];
-  assert.equal(before.heading,0,'Face exit while backing into waiting bay');
-  assert.equal(before.reversing,true);
-  assert.equal(before.status,'대기장소 후진 주차 중');
+  assert.equal(before.heading,180,'Face into waiting bay while parking forwards');
+  assert.equal(before.reversing,false);
+  assert.equal(before.status,'대기장소 전진 주차 중');
   assert(before.position[1]<POINTS.waiting[1]);
   const parked=snapshot(plan,task.end).robots[task.actor];
-  assert.equal(parked.heading,0);
+  assert.equal(parked.heading,180);
   assert.deepEqual(parked.position,POINTS.waiting);
  }
  for(const task of plan.tasks.filter(t=>t.type==='move'&&t.from==='waiting')){
+  const phases=task.motion;
+  assert.equal(phases[0].type,'drive');assert(phases[0].reversing);
+  assert.equal(phases[0].heading,180);
+  assert.equal(phases[0].to[1]-phases[0].from[1],-40,'Short schematic undock only');
+  assert.equal(phases[1].type,'turn');assert.equal(Math.abs(phases[1].delta),180);
+  assert.deepEqual(phases[1].position,phases[0].to,'Turn only after clearing waiting bay');
+  assert.equal(phases[2].type,'drive');assert.equal(phases[2].reversing,false);
   const leaving=snapshot(plan,task.start+.01).robots[task.actor];
-  assert.equal(leaving.heading,0);
-  assert.equal(leaving.reversing,false);
-  assert(leaving.position[1]<POINTS.waiting[1],'Leave bay forwards toward exit');
+  assert.equal(leaving.heading,180);
+  assert.equal(leaving.reversing,true);
+  assert.equal(leaving.status,'대기장소 10cm 후진 중');
+  assert(leaving.position[1]<POINTS.waiting[1],'Reverse out of bay before turning');
  }
 }
-console.log('PASS: reverse parking into waiting bay, exit-facing stop and forward departure.');
-
+console.log('PASS: forward parking into waiting bay, rear IR stop and short reverse/180° forward departure.');
 
 for(const n of [1,2,3,20]){
  const plan=makePlan(n);
@@ -149,7 +156,7 @@ for(const n of [1,2,3,20]){
    assert.equal(phases[2].type,'drive');assert.equal(phases[2].reversing,false);
   }
   phases.filter(p=>p.type==='drive'&&p.reversing).forEach(p=>{
-   assert((['home','warehouse','assembly'].includes(task.from)&&p===phases[0])||(task.to==='waiting'&&p.parking),'No reverse transit outside local undock/parking');
+   assert(['home','warehouse','assembly','waiting'].includes(task.from)&&p===phases[0],'No reverse transit outside local undock');
   });
   if(task.from==='assembly'&&task.to==='home'){
    assert(phases.slice(1).filter(p=>p.type==='drive').every(p=>!p.reversing));
@@ -157,7 +164,7 @@ for(const n of [1,2,3,20]){
   }
  }
 }
-console.log('PASS: HOME/warehouse/assembly short reverse exit → 180° turn after clearance → forward transit; waiting reverse parking retained.');
+console.log('PASS: all four docks use short reverse exit → 180° turn after clearance → forward transit.');
 
 for(let n=2;n<=20;n++){
  const plan=makePlan(n),last=plan.jobs.at(-1),other=1-last.robot;
@@ -172,6 +179,6 @@ console.log('PASS: final delivery docking completes before the waiting robot ret
 for(const robot of [0,1]){
  const home=POINTS['home'+(robot+1)];
  assert.deepEqual(path('assembly','home',robot),[POINTS.assembly,[360,750],[340,750],[340,home[1]],home]);
- assert.deepEqual(path('waiting','home',robot),[POINTS.waiting,[340,home[1]],home]);
+ assert.deepEqual(path('waiting','home',robot),[POINTS.waiting,[340,880],[340,home[1]],home]);
 }
 console.log('PASS: no extra home-side waypoints or detours on either return route.');

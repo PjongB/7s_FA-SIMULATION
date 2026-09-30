@@ -3,7 +3,7 @@
   'use strict';
   const Settings=typeof module!=='undefined'&&module.exports?require('./settings.js'):root.SimulationSettings;
   const POINTS = { home1:[110,700], home2:[110,795], waiting:[340,920], warehouse:[340,300], assembly:[400,750] };
-  const DOCK_HEADINGS = {home:270,waiting:0,warehouse:0,assembly:90};
+  const DOCK_HEADINGS = {home:270,waiting:180,warehouse:0,assembly:90};
   const NAME = {home:'초기위치',waiting:'대기장소',warehouse:'자재창고',assembly:'제작공정'};
   function makePlan(quantity, config=Settings.defaults) {
     config=Settings.validate(config);
@@ -15,18 +15,17 @@
     function move(robot,from,to,start,duration,job=null) {
       const route=path(from,to,robot);
       const reverseSegments=[];
-      if(['home','warehouse','assembly'].includes(from))reverseSegments.push(0);
-      if(to==='waiting')reverseSegments.push(route.length-2);
+      if(['home','warehouse','assembly','waiting'].includes(from))reverseSegments.push(0);
       const motion=makeMotion(route,DOCK_HEADINGS[from],duration,reverseSegments,DOCK_HEADINGS[to],config['burger'+(robot+1)]);
-      motion.forEach(phase=>{phase.parking=phase.type==='drive'&&phase.reversing&&to==='waiting'&&phase.to===route.at(-1);});
+      motion.forEach(phase=>{phase.parking=phase.type==='drive'&&to==='waiting'&&phase.to===route.at(-1);});
       const end=start+motion.at(-1).end;
       task(robot,'move',start,end,{from,to,job,motion});
       event(start,'move_start',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]}로 이동`,photo:to==='warehouse'?'warehouse':to==='home'?'home':'route'});
       for(const phase of motion){
         if(phase.type==='turn')event(start+phase.start,'turn_start',{robot,from,to,job,text:`버거 ${robot+1} · 정지 후 ${Math.abs(phase.delta)===180?'180° 방향 전환':phase.delta>0?'우회전 90°':'좌회전 90°'}`,photo:'route'});
-        else event(start+phase.start,phase.reversing?'reverse_start':'drive_start',{robot,from,to,job,text:`버거 ${robot+1} · ${phase.parking?'대기장소 후진 주차':phase.reversing?`${NAME[from]} 10cm 후진 · 로컬 cmd_vel 출차`:'전방 정렬 완료 · 직선 주행'}`,photo:phase.parking?'waiting':'route'});
+        else event(start+phase.start,phase.reversing?'reverse_start':'drive_start',{robot,from,to,job,text:`버거 ${robot+1} · ${phase.parking?'대기장소 전진 주차':phase.reversing?`${NAME[from]} 10cm 후진 · 로컬 cmd_vel 출차`:'전방 정렬 완료 · 직선 주행'}`,photo:phase.parking?'waiting':'route'});
       }
-      event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} ${to==='waiting'?'후진 주차 완료':'도착'} · 후방 감지선 도달·정지`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
+      event(end,'arrive',{robot,from,to,job,text:`버거 ${robot+1} · ${NAME[to]} ${to==='waiting'?'전진 주차 완료':'도착'} · 후방 감지선 도달·정지`,photo:to==='waiting'?'waiting':to==='home'?'home':to==='assembly'?'process':'warehouse'});
       return end;
     }
     event(0,'order',{quantity,text:`Host 주문 접수 · A제품 ${quantity}개 / 두 카운트 ${quantity}로 설정`,photo:'route'});
@@ -38,7 +37,7 @@
         if(i===1) tails[1]=move(1,'home','waiting',prior.loadStart,3,i);
         warehouseStart=Math.max(tails[robot],prior.assemblyStart);
       }
-      const loadStart=move(robot,i===0?'home':'waiting','warehouse',warehouseStart,4,i);
+      const loadStart=move(robot,i===0?'home':'waiting','warehouse',warehouseStart,i===0?4:3,i);
       const loaded=loadStart+3*config.process.loadPartSeconds;
       task('arm1','load',loadStart,loaded,{robot,job:i});
       event(loadStart,'load_start',{robot,job:i,text:`로봇팔 1 · 버거 ${robot+1}에 부품 3개 적재 시작`,photo:'loading'});
@@ -88,7 +87,7 @@
     }
     if(from==='waiting'&&to==='home'){
       const p=point(to,robot);
-      return [point(from,robot),[340,p[1]],p];
+      return [point(from,robot),[340,880],[340,p[1]],p];
     }
     // Each bay joins the central vertical aisle; never cut across a workboard.
     const branch=place=>{
@@ -101,6 +100,7 @@
     // Split the first straight segment to clear the dock before a 180-degree turn.
     if(from==='warehouse')route.splice(1,0,[340,340]);
     if(from==='assembly')route.splice(1,0,[360,750]);
+    if(from==='waiting')route.splice(1,0,[340,880]);
     return route;
   }
   function pose(points,progress,reverseLast=false) {
@@ -181,7 +181,8 @@
         const r=robots[t.actor];
         Object.assign(r,motionPose(t,time));
         if(r.turning)r.status='정지 · 제자리 회전 중';
-        else if(r.reversing)r.status=r.parking?'대기장소 후진 주차 중':NAME[t.from]+' 10cm 후진 중';
+        else if(r.reversing)r.status=NAME[t.from]+' 10cm 후진 중';
+        else if(r.parking)r.status='대기장소 전진 주차 중';
       }
       if(t.type==='prepare')state.linear=f;
       if(t.type==='reset')state.linear=1-f;

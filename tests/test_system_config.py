@@ -14,6 +14,12 @@ class SystemConfigTest(unittest.TestCase):
             with self.assertRaises(ValueError):validate(c)
         c=load();c['navigation']['dock_departure']['backup_distance_m']=0
         with self.assertRaises(ValueError):validate(c)
+        c=load();c['navigation']['waiting_parking']='REVERSE_IR_ONLY'
+        with self.assertRaises(ValueError):validate(c)
+        c=load();c['stations']['WAITING']['docking_mode']='REVERSE_IR_ONLY'
+        with self.assertRaises(ValueError):validate(c)
+        c=load();c['navigation']['dock_departure']['stations'].remove('WAITING')
+        with self.assertRaises(ValueError):validate(c)
         c=load();c['devices']['burger2']['action_name']=c['devices']['burger1']['action_name']
         with self.assertRaises(ValueError):validate(c)
         c=load();c['transitions']['next_delivery']['requires_all']=['unknown']

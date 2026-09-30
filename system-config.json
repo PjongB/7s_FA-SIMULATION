@@ -105,7 +105,7 @@
     },
     "WAITING": {
       "label": "대기장소",
-      "docking_mode": "REVERSE_IR_ONLY"
+      "docking_mode": "FORWARD_REAR_IR"
     }
   },
   "commands": {
@@ -373,7 +373,7 @@
   },
   "navigation": {
     "travel_mode": "NAV2_FORWARD_ONLY",
-    "waiting_parking": "REVERSE_IR_ONLY",
+    "waiting_parking": "FORWARD_REAR_IR",
     "velocity_ownership": "SINGLE_OWNER_LOCAL_ARBITER",
     "dock_departure": {
       "backup_distance_m": 0.1,
@@ -386,7 +386,8 @@
       "stations": [
         "HOME",
         "WAREHOUSE",
-        "ASSEMBLY"
+        "ASSEMBLY",
+        "WAITING"
       ]
     }
   }
