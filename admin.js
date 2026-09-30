@@ -1,16 +1,18 @@
 'use strict';
 const el=id=>document.getElementById(id), S=SimulationSettings;
+const visibleFields=S.fields.filter(([group])=>group!=='process');
+let processConfig={...S.defaults.process};
 function message(text,error=false){el('settings-status').textContent=text;el('settings-status').className=error?'error':'';}
-for(const [group,key,label,unit,min,max,step] of S.fields){
+for(const [group,key,label,unit,min,max,step] of visibleFields){
  const row=document.createElement('div');row.className='setting-field';
  const text=document.createElement('label');text.htmlFor=group+'-'+key;text.textContent=label+' ('+unit+')';
  const hint=document.createElement('small');hint.textContent=`${min}~${max}${unit} · 기본 ${S.defaults[group][key]}${unit}`;text.append(hint);
  const input=document.createElement('input');Object.assign(input,{id:group+'-'+key,type:'number',min,max,step:'any',required:true});
  row.append(text,input);el(group+'-fields').append(row);
 }
-function collect(){const c={version:1,burger1:{},burger2:{},process:{}};for(const [g,k] of S.fields){const value=el(g+'-'+k).value;c[g][k]=value.trim()===''?NaN:Number(value);}return S.validate(c);}
+function collect(){const c={version:1,burger1:{},burger2:{},process:{...processConfig}};for(const [g,k] of visibleFields){const value=el(g+'-'+k).value;c[g][k]=value.trim()===''?NaN:Number(value);}return S.validate(c);}
 function preview(){try{const c=collect(),p=RobotSimulation.makePlan(2,c);el('preview-time').textContent=p.duration.toFixed(1)+'초';el('preview-stages').textContent=`Host와 같은 경계 기준 ${RobotSimulation.stagesFor(2,c).length}단계 · 부품 3개 적재 ${(c.process.loadPartSeconds*3).toFixed(1)}초`;}catch(e){el('preview-time').textContent='입력값 확인';el('preview-stages').textContent=e.message;}}
-function fill(c){for(const [g,k] of S.fields)el(g+'-'+k).value=c[g][k];preview();}
+function fill(c){const valid=S.validate(c);processConfig={...valid.process};for(const [g,k] of visibleFields)el(g+'-'+k).value=valid[g][k];preview();}
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 el('settings-form').oninput=()=>{preview();message('변경 사항이 아직 저장되지 않았습니다.');};
 el('settings-form').onsubmit=e=>{e.preventDefault();try{S.save(collect());message('저장했습니다. 시뮬레이션의 다음 새 주문부터 적용됩니다. Host 모드는 서버 설정을 사용합니다.');}catch(e){message('저장하지 못했습니다: '+e.message,true);}};
