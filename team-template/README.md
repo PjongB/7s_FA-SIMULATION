@@ -151,3 +151,7 @@ export ROS_DOMAIN_ID=40
 - 단계별 흐름: https://rorobot.atlassian.net/wiki/spaces/robot3/pages/19726542 (초안 상태일 수 있음)
 - 1차 목표: https://rorobot.atlassian.net/wiki/spaces/robot3/pages/19759106
 - 공개 웹: https://pjongb.github.io/7s_FA-SIMULATION/
+
+## 추가된 ROS 상태 송신 시험 (2026-09-30)
+
+`web/ros-config.js`에서 주소·토픽·주기를 설정합니다. 웹 수량·재생 상태·제품명을 `/web_to_ros`로 보내는 기능이며 실제 로봇 명령·완료 연동은 아닙니다. ROS_DOMAIN_ID=40의 rosbridge 실행과 수신 확인은 [web/ROS_BRIDGE_GUIDE.md](web/ROS_BRIDGE_GUIDE.md)를 참고하세요. 기존 웹/HTTP 시험에는 ROS 설치가 필요 없습니다.

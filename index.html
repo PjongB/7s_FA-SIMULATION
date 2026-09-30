@@ -88,6 +88,8 @@
 <h3>호스트 PC 통신 시험</h3>
 <p id="host-status" role="status">자동 재생 모드</p>
 <p id="host-version" role="status"></p>
+<p id="ros-status" role="status">ROS 상태 송신 · 준비 중</p>
+<button id="ros-connect" type="button" disabled>ROS 연결 / 재연결</button>
 <button id="host-connect" type="button">호스트 연결</button>
 <div id="host-local-help"><p>호스트 PC에서 시험 프로그램을 실행하고 안내된 로컬 주소로 접속하세요.</p><a href="host-test.zip" download>Host 개발 패키지·팀 README 다운로드 ↓</a><code>python3 web/host/server.py</code><small>압축 해제 후 robot3_host/README.md 먼저 확인 · 웹 시험은 Python 3.10 이상 · ROS 폴더는 팀 개발용 명세</small></div>
 <div class="host-test-actions"><button id="host-next" disabled>다음 단계</button><button id="host-pause" disabled>일시정지</button><button id="host-reset" disabled>시험 초기화</button></div>
@@ -105,5 +107,5 @@
 <footer><span><strong>ROBOT3</strong> · 1차 통합 시연</span><p>사진 기반 공정 시나리오 · 이동 경로와 소요 시간은 설명용이며 실제 로봇을 제어하지 않습니다.</p><a href="https://rorobot.atlassian.net/wiki/spaces/robot3/pages/edit-v2/19759106" target="_blank" rel="noopener">공정 목표 문서 ↗</a></footer>
 </main>
 <dialog id="photo-dialog"><button id="close-dialog" aria-label="사진 닫기">×</button><img id="dialog-image" alt=""><div><h2 id="dialog-title"></h2><p id="dialog-description"></p></div></dialog>
-<script src="config.js?v=20260929-admin"></script><script src="settings.js?v=20260929-admin"></script><script src="engine.js?v=20260929-dock-undock"></script><script src="host-client.js?v=20260929-admin"></script><script src="system-policy.js?v=20260929-host-config"></script><script src="app.js?v=20260929-dock-undock"></script>
+<script src="config.js?v=20260929-admin"></script><script src="settings.js?v=20260929-admin"></script><script src="engine.js?v=20260929-dock-undock"></script><script src="host-client.js?v=20260929-admin"></script><script src="system-policy.js?v=20260929-host-config"></script><script src="ros-config.js?v=20260930-ros"></script><script src="assets/vendor/roslib-1.4.1.min.js"></script><script src="ros-client.js?v=20260930-ros"></script><script src="app.js?v=20260930-ros"></script>
 </body></html>

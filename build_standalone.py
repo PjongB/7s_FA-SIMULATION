@@ -8,8 +8,9 @@ font=base64.b64encode((root/'assets/PretendardVariable.woff2').read_bytes()).dec
 css=css.replace('assets/PretendardVariable.woff2','data:font/woff2;base64,'+font)
 photos={p.stem:'data:image/jpeg;base64,'+base64.b64encode(p.read_bytes()).decode() for p in (root/'assets').glob('*.jpg')}
 html=re.sub(r'<link rel="stylesheet" href="styles\.css(?:\?[^"]*)?">',lambda _: '<style>'+css+'</style>',html)
-for name in ['config','settings','system-policy']:
+for name in ['config','settings','system-policy','ros-config','ros-client']:
     html=re.sub(r'<script src="'+name+r'\.js(?:\?[^"]*)?"></script>',lambda _,name=name:'<script>'+(root/(name+'.js')).read_text()+'</script>',html)
+html=html.replace('<script src="assets/vendor/roslib-1.4.1.min.js"></script>', '<script>'+(root/'assets/vendor/roslib-1.4.1.min.js').read_text()+'</script>')
 html=html.replace('href="admin.html"','href="https://pjongb.github.io/7s_FA-SIMULATION/admin.html"')
 for key,data in photos.items():
     html=html.replace('src="assets/'+key+'.jpg"','src="'+data+'"')

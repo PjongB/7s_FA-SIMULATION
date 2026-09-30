@@ -203,3 +203,6 @@ function frame(now){
 }
 if(window.SYSTEM_ORDER_POLICY){const p=window.SYSTEM_ORDER_POLICY;$('quantity').min=p.quantity_min;$('quantity').max=p.quantity_max;$('quantity').value=p.quantity_default;}
 render();HostBridge.init(applyHostState);requestAnimationFrame(frame);
+
+// Preserve the teammate telemetry contract: quantity/product strings, playing boolean.
+window.RosTelemetry?.init(()=>({quantity:$('quantity').value,playing,product:$('product').value}));
