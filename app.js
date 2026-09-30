@@ -67,13 +67,16 @@ $('speed').onchange=e=>speed=Number(e.target.value);
 $('timeline').oninput=e=>{if(!plan||HostBridge.enabled)return;playing=false;manualMode=false;manualTarget=null;time=Number(e.target.value);render();};
 $('follow').onclick=()=>{following=!following;render();};
 $('photo-open').onclick=()=>openPhoto(currentPhoto);
+$('open-details').onclick=()=>$('detail-dialog').showModal();
+$('close-details').onclick=()=>$('detail-dialog').close();
+$('detail-dialog').onclick=e=>{if(e.target===$('detail-dialog'))$('detail-dialog').close();};
 $('close-dialog').onclick=()=>$('photo-dialog').close();
 $('photo-dialog').onclick=e=>{if(e.target===$('photo-dialog'))$('photo-dialog').close();};
-document.querySelectorAll('[data-photo]').forEach(el=>{const activate=()=>{following=false;setPhoto(el.dataset.photo);render();};el.addEventListener('click',activate);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});});
+document.querySelectorAll('[data-photo]').forEach(el=>{const activate=()=>{following=false;setPhoto(el.dataset.photo);render();openPhoto(el.dataset.photo);};el.addEventListener('click',activate);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});});
 document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===button));$('simulation-view').hidden=button.dataset.tab!=='simulation';$('gallery-view').hidden=button.dataset.tab!=='gallery';});
 Object.entries(photos).forEach(([key,data])=>{const card=document.createElement('button');card.className='gallery-card';card.innerHTML=`<img src="${photoPath(key)}" alt="${data.title}" loading="lazy"><div><h3>${data.title} ↗</h3><p>${data.detail}</p></div>`;card.onclick=()=>openPhoto(key);$('gallery-grid').append(card);});
 $('export').onclick=()=>{if(!plan)return;const s=RobotSimulation.snapshot(plan,time);const data={product:'A',ordered:plan.quantity,simulationTime:time,transportRemaining:s.transport,productRemaining:s.remaining,completed:s.completed,events:s.events.map(({time,kind,text,robot,job})=>({time,kind,text,robot:robot==null?null:`burger${robot+1}`,productNumber:job==null?null:job+1}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='robot3-simulation-log.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON','TEXTAREA'].includes(e.target.tagName)||$('photo-dialog').open)return;if(e.code==='Space'){e.preventDefault();togglePlay();}if(e.code==='ArrowRight'){e.preventDefault();step(1);}if(e.code==='ArrowLeft'){e.preventDefault();step(-1);}});
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON','TEXTAREA'].includes(e.target.tagName)||$('photo-dialog').open||$('detail-dialog').open)return;if(e.code==='Space'){e.preventDefault();togglePlay();}if(e.code==='ArrowRight'){e.preventDefault();step(1);}if(e.code==='ArrowLeft'){e.preventDefault();step(-1);}});
 function getScene(s){
  if(s.done)return {key:'pallet',kicker:'ORDER COMPLETE',title:'A제품 주문 완료',detail:`완제품 ${plan.quantity}개가 파렛트에 적재됐고, 버거 1·2가 모두 초기위치로 돌아왔습니다.`};
  const f=s.focus;
@@ -117,7 +120,7 @@ function renderCurrentStage(s){
  if(manualMode&&!playing&&plan&&!s.done&&time>=manualTarget){status='단계 완료 · 다음 실행 대기';title='다음 단계 실행 대기';detail='왼쪽 완료 조건을 확인한 뒤 단계별 실행 버튼을 누르세요.';label='단계 실행 대기';items=['다음 지시를 기다립니다.'];}
  const number=HostBridge.enabled?(hs?.quantity?`호스트 단계 ${hs.command?.seq??hs.acked_seq} / ${hs.stage_count??'—'}`:'호스트 통신 모드'):manualMode?'단계별 시뮬레이션':'자동 시뮬레이션';
  if(!items.length){label='장비 상태';items=[s.done?'버거 1·2 복귀 및 파렛트 적재 완료':!plan?'버거 1·2 초기위치 대기':'다음 작업 준비'];}
- set('stage-status',status);set('stage-number',number);set('stage-title',title);set('stage-detail',detail);set('stage-work-label',label);
+ set('stage-status',status);set('stage-number',number);set('stage-title',title);set('stage-detail',detail);$('stage-detail').title=detail;set('stage-work-label',label);
  const list=$('stage-work-list'),key=JSON.stringify(items);
  if(list.dataset.items!==key){list.replaceChildren(...items.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));list.dataset.items=key;}
 }
@@ -136,10 +139,11 @@ function renderConditions(){
   list.replaceChildren(...items.map(item=>{
    const li=document.createElement('li');li.className=item.done?'condition-done':'';
    const dot=document.createElement('i');dot.className='condition-dot';dot.setAttribute('aria-hidden','true');
-   const label=document.createElement('span');label.textContent=item.label;
-   const small=document.createElement('small');small.textContent=`${item.done?'완료':'미완료'} · ${item.signal}`;
+   const label=document.createElement('span');label.textContent=item.label.replace(' · 후방 감지선 도달·정지',' · IR 정지').replace('대기장소 후진 주차 완료','대기 주차 완료').replace('리니어 모터','리니어').replace('파렛트 적재 성공 / 완제품 잔여 −1','파렛트 적재 완료').replace('초기위치 복귀 완료','원점 복귀 완료');label.title=`${item.label} · ${item.signal}`;
+   const small=document.createElement('small');small.textContent=item.done?'완료':'미완료';
    label.append(small);li.append(dot,label);return li;
   }));list.dataset.items=key;
+  $('condition-signals').replaceChildren(...items.map(item=>{const li=document.createElement('li');li.textContent=`${item.done?'완료':'미완료'} · ${item.label} — ${item.signal}`;return li;}));
  }
  const ready=HostBridge.enabled?HostBridge.online&&['idle','done','waiting'].includes(hs?.status):!playing;
  $('step-order').disabled=stepBusy||!ready;
